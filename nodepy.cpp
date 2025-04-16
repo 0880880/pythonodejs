@@ -1,9 +1,9 @@
 #include "nodepy.h"
 
-#include <assert.h>
-#include <vector>
 #include <string>
 #include <memory>
+#include <iostream>
+#include <vector>
 
 #include "node.h"
 #include "uv.h"
@@ -21,9 +21,17 @@ using v8::Value;
 
 struct NodeContext {
   std::unique_ptr<MultiIsolatePlatform> platform;
-  Environment* env;
   std::vector<std::string> args;
   std::vector<std::string> exec_args;
+  std::unique_ptr<CommonEnvironmentSetup> setup;
+  Environment* env;
+  Isolate* isolate;
+  v8::Global<Context> global_ctx;
+  v8::Global<v8::Function> runInThisContext;
+};
+
+struct Func {
+  v8::Global<v8::Function> function;
 };
 
 NodeContext* NodeContext_Create() {
@@ -55,24 +63,124 @@ int NodeContext_Setup(NodeContext* context, int argc, char** argv) {
   return result->exit_code();
 }
 
-void NodeContext_Init(NodeContext* context, int thread_pool_size) {
+
+NodeValue to_node_value(NodeContext* context, v8::Local<Context> local_ctx, v8::Local<v8::Value> value) {
+    if (value->IsUndefined()) {
+    	return {.type=UNDEFINED};
+    } else if (value->IsNull()) {
+    	return {.type=NULL_T};
+    } else if (value->IsNumber()) {
+    	return {.type=NUMBER, .val_num=value.As<v8::Number>()->Value()};
+    } else if (value->IsBoolean()) {
+    	return {.type=BOOLEAN_T, .val_bool=value.As<v8::Boolean>()->Value()};
+    } else if (value->IsString()) {
+        v8::String::Utf8Value utf8(context->isolate, value.As<v8::String>());
+        return {.type=STRING, .val_string=*utf8};
+    } else if (value->IsBigInt()) {
+        v8::String::Utf8Value utf8(context->isolate, value.As<v8::BigInt>()->ToString(local_ctx).ToLocalChecked());
+        return {.type=BIGINT, .val_big=*utf8};
+    } else if (value->IsFunction()) {
+        v8::Local<v8::Function> func = value.As<v8::Function>();
+        v8::Global<v8::Function> global_func(context->isolate, func);
+        v8::String::Utf8Value utf8(context->isolate, func->GetName());
+        auto f = std::make_unique<Func>();
+        f->function = std::move(global_func);
+        return {.type=FUNCTION, .function_name=*utf8, .function=f.release()};
+    } else if (value->IsArray()) {
+        v8::Local<v8::Array> array = value.As<v8::Array>();
+        int length = array->Length();
+        NodeValue* arr = (NodeValue*)malloc(length * sizeof(NodeValue));
+        for (int i = 0; i < length; i++) {
+            NodeValue v = to_node_value(context, local_ctx, array->Get(local_ctx, i).ToLocalChecked());
+            arr[i].type = v.type;
+            arr[i].val_bool = v.val_bool;
+            arr[i].val_num = v.val_num;
+            arr[i].val_string = v.val_string;
+            arr[i].val_symbol = v.val_symbol;
+            arr[i].function_name = v.function_name;
+            arr[i].val_array = v.val_array;
+            arr[i].val_array_len = v.val_array_len;
+            arr[i].val_big = v.val_big;
+            arr[i].object_keys = v.object_keys;
+            arr[i].object_values = v.object_values;
+            arr[i].object_len = v.object_len;
+        }
+    	return {.type=ARRAY, .val_array=arr, .val_array_len=length};
+    } else if (value->IsObject()) {
+        v8::Local<v8::Object> obj = value.As<v8::Object>();
+		v8::Local<v8::Array> keys = obj->GetOwnPropertyNames(local_ctx).ToLocalChecked();
+        int length = keys->Length();
+        char** key_arr = (char**)malloc(length * sizeof(char*));
+        NodeValue* objects = (NodeValue*)malloc(length * sizeof(NodeValue));
+        for (uint32_t i = 0; i < length; ++i) {
+            v8::Local<v8::Value> key = keys->Get(local_ctx, i).ToLocalChecked();
+            v8::String::Utf8Value utf8(context->isolate, key);
+            size_t len = strlen(*utf8);
+            key_arr[i] = (char*)malloc(len + 1);  // +1 for null terminator
+            strcpy(key_arr[i], *utf8);
+            v8::Local<v8::Value> value;
+			if (obj->Get(local_ctx, key).ToLocal(&value)) {
+                NodeValue v = to_node_value(context, local_ctx, value);
+                objects[i].type = v.type;
+                objects[i].val_bool = v.val_bool;
+                objects[i].val_num = v.val_num;
+                objects[i].val_string = v.val_string;
+                objects[i].val_symbol = v.val_symbol;
+                objects[i].function_name = v.function_name;
+                objects[i].val_array = v.val_array;
+                objects[i].val_array_len = v.val_array_len;
+                objects[i].val_big = v.val_big;
+                objects[i].object_keys = v.object_keys;
+                objects[i].object_values = v.object_values;
+                objects[i].object_len = v.object_len;
+			}
+		}
+    	return {.type=OBJECT, .object_keys=key_arr, .object_values=objects, .object_len=length};
+    }
+    return {};
+}
+
+
+v8::Local<v8::Value> to_v8_value(NodeContext* context, v8::Local<Context> local_ctx, NodeValue value) {
+    if (value.type == UNDEFINED) {
+    	return v8::Undefined(context->isolate);
+    } else if (value.type == NULL_T) {
+    	return v8::Null(context->isolate);
+    } else if (value.type == NUMBER) {
+    	return v8::Number::New(context->isolate, value.val_num);
+    } else if (value.type == BOOLEAN_T) {
+    	return v8::Boolean::New(context->isolate, value.val_bool);
+    } else if (value.type == STRING) {
+        return v8::String::NewFromUtf8(context->isolate, value.val_string).ToLocalChecked();
+    } else if (value.type == BIGINT) {
+
+    } else if (value.type == FUNCTION) {
+        return (*value.function).function.Get(context->isolate);
+    } else if (value.type == ARRAY) {
+		v8::Local<v8::Array> array = v8::Array::New(context->isolate, value.val_array_len);
+        for (int i = 0; i < value.val_array_len; i++) {
+        	array->Set(local_ctx, i, to_v8_value(context, local_ctx, value.val_array[i]));
+        }
+    	return array;
+    } else if (value.type == OBJECT) {
+        v8::Local<v8::Object> object = v8::Object::New(context->isolate);
+        for (int i = 0; i < value.object_len; i++) {
+        	object->Set(local_ctx, v8::String::NewFromUtf8(context->isolate, value.object_keys[i]).ToLocalChecked(), to_v8_value(context, local_ctx, value.object_values[i]));
+        }
+    	return object;
+    }
+    return {};
+}
+
+int NodeContext_Init(NodeContext* context, int thread_pool_size) {
   context->platform = MultiIsolatePlatform::Create(thread_pool_size);
   V8::InitializePlatform(context->platform.get());
   V8::Initialize();
-}
 
-void NodeContext_SetCode(NodeContext* context, const char* code) {
-  if (context->args.size() == 1) {
-    context->args.push_back(code);
-    return;
-  }
-  context->args[1] = code;
-}
-
-int NodeContext_Run(NodeContext* context) {
   std::vector<std::string> errors;
-  std::unique_ptr<CommonEnvironmentSetup> setup =
+  context->setup =
       CommonEnvironmentSetup::Create(context->platform.get(), &errors, context->args, context->exec_args);
+  CommonEnvironmentSetup* setup = context->setup.get();
 
   if (!setup) {
     for (const std::string& err : errors)
@@ -80,35 +188,104 @@ int NodeContext_Run(NodeContext* context) {
     return 1;
   }
 
-  Isolate* isolate = setup->isolate();
-  Environment* env = setup->env();
-  context->env = env;
+  context->isolate = setup->isolate();
+  context->env = setup->env();
+  Isolate* isolate = context->isolate;
+  Environment* env = context->env;
 
   int exit_code = 0;
-  {
-    Locker locker(isolate);
-    Isolate::Scope isolate_scope(isolate);
-    HandleScope handle_scope(isolate);
-    v8::Local<Context> local_ctx = setup->context();
+  Locker locker(isolate);
+  Isolate::Scope isolate_scope(isolate);
+  HandleScope handle_scope(isolate);
+  v8::Local<Context> local_ctx = setup->context();
+  v8::Global<Context> global_ctx(isolate, local_ctx);
+  context->global_ctx = std::move(global_ctx);
+  Context::Scope context_scope(local_ctx);
 
-    Context::Scope context_scope(local_ctx);
+  v8::Global<v8::Function> require;
 
-    MaybeLocal<Value> loadenv_ret = node::LoadEnvironment(
-        env,
-        "const publicRequire ="
-        "  require('node:module').createRequire(process.cwd() + '/');"
-        "globalThis.require = publicRequire;"
-        "require('node:vm').runInThisContext(process.argv[1]);");
+  MaybeLocal<Value> loadenv_ret = node::LoadEnvironment(
+      env,
+      [&](const node::StartExecutionCallbackInfo& info) -> v8::MaybeLocal<Value> {
+        require.Reset(isolate, info.native_require);
+        return v8::Undefined(isolate);
+      }
+  );
 
-    if (loadenv_ret.IsEmpty())
-      return 1;
+  exit_code = node::SpinEventLoop(env).FromMaybe(1);
 
-    exit_code = node::SpinEventLoop(env).FromMaybe(1);
+  v8::Local<v8::Value> vm_string[] = { v8::String::NewFromUtf8Literal(isolate, "vm") };
+  v8::Local<Value> vm = require.Get(isolate)->Call(
+      isolate,
+      local_ctx,
+      local_ctx->Global(),
+      1,
+      vm_string).ToLocalChecked();
 
-    node::Stop(env);
-  }
+  v8::Global<v8::Function> runInThisContext(isolate, vm.As<v8::Object>()->Get(
+        setup->context(),
+        v8::String::NewFromUtf8Literal(isolate, "runInThisContext")).ToLocalChecked().As<v8::Function>());
+  context->runInThisContext = std::move(runInThisContext);
+
+  /*if (loadenv_ret.IsEmpty())
+    return 1;
+  else {
+    v8::Local<Value> result = loadenv_ret.ToLocalChecked();
+    std::cout << GetV8TypeAsString(isolate, result) << std::endl;
+    if (result->IsNumber()) {
+      double value = result->NumberValue(local_ctx).FromMaybe(0);
+      std::cout << "Script returned number: " <<  value << std::endl;
+    }
+  }*/
 
   return exit_code;
+}
+
+std::string GetV8TypeAsString(v8::Isolate* isolate, v8::Local<v8::Value> value) {
+  v8::Local<v8::String> type_str = value->TypeOf(isolate);
+  v8::String::Utf8Value utf8(isolate, type_str);
+  return std::string(*utf8);
+}
+
+NodeValue NodeContext_Run_Script(NodeContext* context, const char* code) {
+  Locker locker(context->isolate);
+  Isolate::Scope isolate_scope(context->isolate);
+  HandleScope handle_scope(context->isolate);
+  v8::Local<Context> local_ctx = context->global_ctx.Get(context->isolate);
+  Context::Scope context_scope(local_ctx);
+  v8::Local<Value> s[] = { v8::String::NewFromUtf8(context->isolate, code).ToLocalChecked() };
+  v8::Local<v8::Value> result = context->runInThisContext.Get(context->isolate)->Call(
+    context->isolate,
+    local_ctx,
+    local_ctx->Global(),
+    1,
+    s
+  ).ToLocalChecked();
+
+  return to_node_value(context, local_ctx, result);
+}
+
+NodeValue NodeContext_Call_Function(NodeContext* context, NodeValue function, NodeValue* args, int args_length) {
+    Locker locker(context->isolate);
+    Isolate::Scope isolate_scope(context->isolate);
+    HandleScope handle_scope(context->isolate);
+    v8::Local<Context> local_ctx = context->global_ctx.Get(context->isolate);
+    Context::Scope context_scope(local_ctx);
+	v8::Local<v8::Function> func = function.function->function.Get(context->isolate);
+
+    std::vector<v8::Local<v8::Value>> args_vec = {};
+    for (int i = 0; i < args_length; i++) {
+        args_vec.push_back(to_v8_value(context, local_ctx, args[i]));
+    }
+  	v8::Local<v8::Value> result = func->Call(
+		context->isolate,
+    	local_ctx,
+    	local_ctx->Global(),
+        args_length,
+        args_vec.data()
+    ).ToLocalChecked();
+
+    return to_node_value(context, local_ctx, result);
 }
 
 void NodeContext_Stop(NodeContext* context) {
@@ -129,11 +306,30 @@ int main(int argc, char** argv) {
     return exit_code;
   }
 
-  NodeContext_Init(context, 4);
-  NodeContext_SetCode(context, "console.log('Hello, World!');");
-  int ret = NodeContext_Run(context);
+  int error = NodeContext_Init(context, 4);
+  NodeValue ret = NodeContext_Run_Script(context, "let foo = 12;console.log(foo);foo;");
+  NodeValue ret1 = NodeContext_Run_Script(context, "const bar = function() {console.log(\"Hello, World!\"); };bar;");
+  NodeValue ret2 = NodeContext_Run_Script(context, "function foobar(num) { return num % 2 == 0; };foobar;");
+
+  NodeValue val = {.type=NUMBER, .val_num=12};
+  std::cout << NodeContext_Call_Function(context, ret2, &val, 1).val_bool << std::endl;
+  NodeContext_Call_Function(context, ret1, 0, 0);
+  NodeContext_Call_Function(context, ret1, 0, 0);
+  NodeContext_Call_Function(context, ret1, 0, 0);
+  NodeContext_Call_Function(context, ret1, 0, 0);
+  NodeContext_Call_Function(context, ret1, 0, 0);
+  NodeContext_Call_Function(context, ret1, 0, 0);
+  NodeContext_Call_Function(context, ret1, 0, 0);
+  NodeContext_Call_Function(context, ret1, 0, 0);
+  NodeContext_Call_Function(context, ret1, 0, 0);
+  NodeContext_Call_Function(context, ret1, 0, 0);
+
+  std::cout << ret.val_num << std::endl;
+  std::cout << ret.val_num << std::endl;
+
+  NodeContext_Stop(context);
 
   Node_Dispose();
   NodeContext_Destroy(context);
-  return ret;
+  return 0;
 }
