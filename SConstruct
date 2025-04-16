@@ -50,7 +50,10 @@ print(f"Downloading libnode from \"{libnode_url}\"")
 
 libnode: Path = Path(pooch.retrieve(url=libnode_url, known_hash=None, progressbar=True))
 
-extract_archive(str(libnode.resolve()), str(lib_dir.resolve()))
+if not any(lib_dir.iterdir()):
+    extract_archive(str(libnode.resolve()), str(lib_dir.resolve()))
+else:
+    print("lib directory is not empty.")
 
 CXXFLAGS = ['-std=c++23']
 INCLUDES = ['./external/node/src', './external/node/deps/v8/include', './external/node/deps/uv/include']
@@ -67,4 +70,4 @@ env = Environment(
                 LINKFLAGS=LDFLAGS
                 )
 
-env.Program(target=str((build_dir / f'nodepy-{OS}-{ARCH}.exe').resolve()), source='nodepy.cpp')
+env.Program(target=str((build_dir / f'nodepy-{OS}-{ARCH}.exe').resolve()), source=['nodepy.cpp'])
