@@ -1,4 +1,4 @@
-#include "nodepy.h"
+#include "pythonode.h"
 
 #include <string>
 #include <memory>
@@ -212,6 +212,13 @@ int NodeContext_Init(NodeContext* context, int thread_pool_size) {
       }
   );
 
+    v8::Local<v8::Object> global = local_ctx->Global();
+    global->Set(
+        local_ctx,
+        v8::String::NewFromUtf8(isolate, "require").ToLocalChecked(),
+        require.Get(isolate)
+    ).FromMaybe(false);
+
   exit_code = node::SpinEventLoop(env).FromMaybe(1);
 
   v8::Local<v8::Value> vm_string[] = { v8::String::NewFromUtf8Literal(isolate, "vm") };
@@ -226,17 +233,6 @@ int NodeContext_Init(NodeContext* context, int thread_pool_size) {
         setup->context(),
         v8::String::NewFromUtf8Literal(isolate, "runInThisContext")).ToLocalChecked().As<v8::Function>());
   context->runInThisContext = std::move(runInThisContext);
-
-  /*if (loadenv_ret.IsEmpty())
-    return 1;
-  else {
-    v8::Local<Value> result = loadenv_ret.ToLocalChecked();
-    std::cout << GetV8TypeAsString(isolate, result) << std::endl;
-    if (result->IsNumber()) {
-      double value = result->NumberValue(local_ctx).FromMaybe(0);
-      std::cout << "Script returned number: " <<  value << std::endl;
-    }
-  }*/
 
   return exit_code;
 }
@@ -265,7 +261,7 @@ NodeValue NodeContext_Run_Script(NodeContext* context, const char* code) {
   return to_node_value(context, local_ctx, result);
 }
 
-NodeValue NodeContext_Call_Function(NodeContext* context, NodeValue function, NodeValue* args, int args_length) {
+NodeValue NodeContext_Call_Function(NodeContext* context, NodeValue function, NodeValue* args, size_t args_length) {
     Locker locker(context->isolate);
     Isolate::Scope isolate_scope(context->isolate);
     HandleScope handle_scope(context->isolate);
@@ -275,6 +271,9 @@ NodeValue NodeContext_Call_Function(NodeContext* context, NodeValue function, No
 
     std::vector<v8::Local<v8::Value>> args_vec = {};
     for (int i = 0; i < args_length; i++) {
+        std::cout << "# C++ #" << std::endl; // DEBUG
+        std::cout << args[i].val_string << std::endl; // DEBUG
+        std::cout << "# C++ #" << std::endl; // DEBUG
         args_vec.push_back(to_v8_value(context, local_ctx, args[i]));
     }
   	v8::Local<v8::Value> result = func->Call(
@@ -292,44 +291,16 @@ void NodeContext_Stop(NodeContext* context) {
   node::Stop(context->env);
 }
 
-void Node_Dispose() {
+void NodeContext_Dispose(NodeContext* context) {
+  context->global_ctx.Reset();
+  context->runInThisContext.Reset();
   V8::Dispose();
   V8::DisposePlatform();
   node::TearDownOncePerProcess();
 }
 
-int main(int argc, char** argv) {
-  NodeContext* context = NodeContext_Create();
-  int exit_code = NodeContext_Setup(context, argc, argv);
-  if (exit_code != 0) {
-    NodeContext_Destroy(context);
-    return exit_code;
+void Node_Dispose_Value(NodeValue value) {
+  if (value.function != nullptr) {
+		value.function->function.Reset();
   }
-
-  int error = NodeContext_Init(context, 4);
-  NodeValue ret = NodeContext_Run_Script(context, "let foo = 12;console.log(foo);foo;");
-  NodeValue ret1 = NodeContext_Run_Script(context, "const bar = function() {console.log(\"Hello, World!\"); };bar;");
-  NodeValue ret2 = NodeContext_Run_Script(context, "function foobar(num) { return num % 2 == 0; };foobar;");
-
-  NodeValue val = {.type=NUMBER, .val_num=12};
-  std::cout << NodeContext_Call_Function(context, ret2, &val, 1).val_bool << std::endl;
-  NodeContext_Call_Function(context, ret1, 0, 0);
-  NodeContext_Call_Function(context, ret1, 0, 0);
-  NodeContext_Call_Function(context, ret1, 0, 0);
-  NodeContext_Call_Function(context, ret1, 0, 0);
-  NodeContext_Call_Function(context, ret1, 0, 0);
-  NodeContext_Call_Function(context, ret1, 0, 0);
-  NodeContext_Call_Function(context, ret1, 0, 0);
-  NodeContext_Call_Function(context, ret1, 0, 0);
-  NodeContext_Call_Function(context, ret1, 0, 0);
-  NodeContext_Call_Function(context, ret1, 0, 0);
-
-  std::cout << ret.val_num << std::endl;
-  std::cout << ret.val_num << std::endl;
-
-  NodeContext_Stop(context);
-
-  Node_Dispose();
-  NodeContext_Destroy(context);
-  return 0;
 }

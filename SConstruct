@@ -56,11 +56,17 @@ else:
     print("lib directory is not empty.")
 
 CXXFLAGS = ['-std=c++23']
+if not OS == 'windows':
+    CXXFLAGS.append('-fPIC')
 INCLUDES = ['./external/node/src', './external/node/deps/v8/include', './external/node/deps/uv/include']
-LDFLAGS = ['-L./lib', '-lnode', '-g']
+LDFLAGS = ['-L./lib', '-lnode', '-shared']
 
-build_dir = Path("build")
-build_dir.mkdir(exist_ok=True) # Create build dir
+if OS == 'windows':
+    EXT = 'dll'
+elif OS == 'darwin':
+    EXT = 'dylib'
+else:
+    EXT = 'so'
 
 env = Environment(
                 TOOLS=['clang', 'clang++', 'gnulink'],
@@ -70,4 +76,4 @@ env = Environment(
                 LINKFLAGS=LDFLAGS
                 )
 
-env.Program(target=str((build_dir / f'nodepy-{OS}-{ARCH}.exe').resolve()), source=['nodepy.cpp'])
+env.Program(target=str((lib_dir / f'pythonode-{OS}-{ARCH}.{EXT}').resolve()), source=['pythonode.cpp'])
