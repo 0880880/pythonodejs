@@ -1,28 +1,32 @@
-from importlib import resources
 from typing import Union
 from pathlib import Path
 import platform
 import ctypes
+import os
 
 get_arch = lambda: {"x86_64": "amd64","aarch64": "arm64","arm64": "arm64","amd64": "amd64"}.get(machine := platform.machine().lower()) or (_ for _ in ()).throw(RuntimeError(f"Unsupported architecture: {machine}"))
 
-def _load_lib():
+def _get_lib_path():
+    base_dir = os.path.dirname(os.path.dirname(__file__))
+    lib_dir = os.path.join(base_dir, 'lib')
+
     system = platform.system().lower()
-    ext_map = {"windows": "dll", "linux": "so", "darwin": "dylib"}
-    ext = ext_map.get(system)
-    if not ext:
+    arch = get_arch()
+
+    if system == 'windows':
+        lib_name = f'pythonode-windows-{arch}.dll'
+    elif system == 'linux':
+        lib_name = f'pythonode-linux-{arch}.so'
+    elif system == 'darwin':  # macOS
+        lib_name = f'pythonode-darwin-{arch}.dylib'
+    else:
         raise RuntimeError(f"Unsupported platform: {system}")
 
-    lib_name = f"pythonode-{system.lower()}-{get_arch()}.{ext}"
+    path = os.path.join(lib_dir, lib_name)
+    return path
 
-    pkg_dir = resources.files(__package__)
-    project_root = pkg_dir.parent
-    lib_file = project_root.joinpath("lib", lib_name)
 
-    with resources.as_file(lib_file) as p:
-        return ctypes.CDLL(str(p))
-
-_lib = _load_lib()
+_lib = ctypes.CDLL(_get_lib_path())
 
 # Define the NodeValue structure
 class NodeValue(ctypes.Structure):
@@ -44,6 +48,7 @@ NodeValue._fields_ = [
     ("object_len", ctypes.c_int),
 ]
 
+# Set function signatures
 _lib.NodeContext_Create.restype = ctypes.c_void_p
 _lib.NodeContext_Create.argtypes = []
 
@@ -71,6 +76,7 @@ _lib.NodeContext_Dispose.argtypes = [ctypes.c_void_p]
 _lib.Node_Dispose_Value.restype = None
 _lib.Node_Dispose_Value.argtypes = [NodeValue]
 
+# Optional enum constants for NodeValueType
 UNDEFINED = 0
 NULL_T = 1
 BOOLEAN_T = 2
