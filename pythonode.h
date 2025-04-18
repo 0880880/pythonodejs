@@ -6,6 +6,8 @@
 #else
   #define EXPORT
 #endif
+#include <stddef.h>
+
 
 #ifdef __cplusplus
 extern "C" {
