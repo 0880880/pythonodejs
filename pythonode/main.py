@@ -1,176 +1,216 @@
-from types import SimpleNamespace
-from enum import IntEnum
-import cffi
-import sys
-import os
+from importlib import resources
+from typing import Union
+from pathlib import Path
+import platform
+import ctypes
 
-__ffi__ = cffi.FFI()
+get_arch = lambda: {"x86_64": "amd64","aarch64": "arm64","arm64": "arm64","amd64": "amd64"}.get(machine := platform.machine().lower()) or (_ for _ in ()).throw(RuntimeError(f"Unsupported architecture: {machine}"))
 
-__ffi__.cdef("""
-typedef enum { false, true } bool;
+def _load_lib():
+    system = platform.system().lower()
+    ext_map = {"windows": "dll", "linux": "so", "darwin": "dylib"}
+    ext = ext_map.get(system)
+    if not ext:
+        raise RuntimeError(f"Unsupported platform: {system}")
 
-typedef struct NodeContext NodeContext;
-typedef struct Func Func;
+    lib_name = f"pythonode-{system.lower()}-{get_arch()}.{ext}"
 
-typedef enum { UNDEFINED, NULL_T, BOOLEAN_T, NUMBER, STRING, SYMBOL, FUNCTION, ARRAY, BIGINT, OBJECT, UNKOWN } NodeValueType;
+    pkg_dir = resources.files(__package__)
+    project_root = pkg_dir.parent
+    lib_file = project_root.joinpath("lib", lib_name)
 
-typedef struct NodeValue {
-    NodeValueType type;
-    bool val_bool;
-    double val_num;
-    char* val_string;
-    char* val_symbol;
-    char* function_name;
-    Func* function;
-    struct NodeValue* val_array;
-    int val_array_len;
-    char* val_big;
-    char** object_keys;
-    struct NodeValue* object_values;
-    int object_len;
-} NodeValue;
+    with resources.as_file(lib_file) as p:
+        return ctypes.CDLL(str(p))
 
-NodeContext* NodeContext_Create();
-int NodeContext_Setup(NodeContext* context, int argc, char** argv);
-int NodeContext_Init(NodeContext* context, int thread_pool_size);
-NodeValue NodeContext_Run_Script(NodeContext* context, const char* code);
-NodeValue NodeContext_Call_Function(NodeContext* context, NodeValue function, NodeValue* args, size_t args_length);
-void NodeContext_Stop(NodeContext* context);
-void NodeContext_Destroy(NodeContext* context);
-void NodeContext_Dispose(NodeContext* context);
-char* Node_Value_To_String(NodeValue value);
-void Node_Dispose_Value(NodeValue value);
-""")
-__lib__ = __ffi__.dlopen(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'lib', 'pythonode-windows-amd64.dll'))
+_lib = _load_lib()
 
-class NodeValueType(IntEnum):
-    UNDEFINED = 0
-    NULL = 1
-    BOOLEAN = 2
-    NUMBER = 3
-    STRING = 4
-    SYMBOL = 5
-    FUNCTION = 6
-    ARRAY = 7
-    BIGINT = 8
-    OBJECT = 9
-    UNKOWN = 10
+# Define the NodeValue structure
+class NodeValue(ctypes.Structure):
+    pass
 
-def __setup__():
+NodeValue._fields_ = [
+    ("type", ctypes.c_int),
+    ("val_bool", ctypes.c_int),
+    ("val_num", ctypes.c_double),
+    ("val_string", ctypes.c_char_p),
+    ("val_symbol", ctypes.c_char_p),
+    ("function_name", ctypes.c_char_p),
+    ("function", ctypes.c_void_p),
+    ("val_array", ctypes.POINTER(NodeValue)),
+    ("val_array_len", ctypes.c_int),
+    ("val_big", ctypes.c_char_p),
+    ("object_keys", ctypes.POINTER(ctypes.c_char_p)),
+    ("object_values", ctypes.POINTER(NodeValue)),
+    ("object_len", ctypes.c_int),
+]
 
-    context = __lib__.NodeContext_Create()
+_lib.NodeContext_Create.restype = ctypes.c_void_p
+_lib.NodeContext_Create.argtypes = []
 
-    argv = __ffi__.new("char*[]", [__ffi__.new("char[]", sys.argv[0].encode("utf-8"))])
+_lib.NodeContext_Setup.restype = ctypes.c_int
+_lib.NodeContext_Setup.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.POINTER(ctypes.c_char_p)]
 
-    error = __lib__.NodeContext_Setup(context, 1, argv)
-    if not error == 0:
-        raise Exception(f"Failed to setup node context: Error {error}")
-    return context
+_lib.NodeContext_Init.restype = ctypes.c_int
+_lib.NodeContext_Init.argtypes = [ctypes.c_void_p, ctypes.c_int]
 
+_lib.NodeContext_Run_Script.restype = NodeValue
+_lib.NodeContext_Run_Script.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
 
-class Function:
+_lib.NodeContext_Call_Function.restype = NodeValue
+_lib.NodeContext_Call_Function.argtypes = [ctypes.c_void_p, NodeValue, ctypes.POINTER(NodeValue), ctypes.c_size_t]
 
-    def __init__(self, node, f):
+_lib.NodeContext_Stop.restype = None
+_lib.NodeContext_Stop.argtypes = [ctypes.c_void_p]
+
+_lib.NodeContext_Destroy.restype = None
+_lib.NodeContext_Destroy.argtypes = [ctypes.c_void_p]
+
+_lib.NodeContext_Dispose.restype = None
+_lib.NodeContext_Dispose.argtypes = [ctypes.c_void_p]
+
+_lib.Node_Dispose_Value.restype = None
+_lib.Node_Dispose_Value.argtypes = [NodeValue]
+
+UNDEFINED = 0
+NULL_T = 1
+BOOLEAN_T = 2
+NUMBER = 3
+STRING = 4
+SYMBOL = 5
+FUNCTION = 6
+ARRAY = 7
+BIGINT = 8
+OBJECT = 9
+UNKOWN = 10
+
+class Func:
+    def __init__(self, name, node, f):
+        self.name = name
         self.__node__ = node
         self.__f__ = f
 
     def __call__(self, *args, **kwargs):
-        a = __ffi__.new("NodeValue[]", len(args))
-        i = 0
-        for arg in args:
-            a[i] = __to_node__(self.__node__, arg)
-            i += 1
-        res = __lib__.NodeContext_Call_Function(self.__node__.__context__, self.__f__, a, len(args))
-        return __to_python__(self.__node__, res)
+        L = len(args)
+        n_args = (NodeValue * L)()
+        for i in range(L):
+            n_args[i] = _to_node(self.__node__, args[i])
+        return _to_python(self.__node__, _lib.NodeContext_Call_Function(self.__node__.__context__, self.__f__, n_args, len(args)))
 
-def __to_python__(node, value):
-    if value.type == NodeValueType.UNDEFINED or value.type == NodeValueType.NULL:
-        return None
-    elif value.type == NodeValueType.BOOLEAN:
-        return bool(value.val_bool)
-    elif value.type == NodeValueType.NUMBER:
-        return value.val_num
-    elif value.type == NodeValueType.STRING:
-        return __ffi__.string(value.val_string).decode()
-    elif value.type == NodeValueType.SYMBOL:
-        return None # TODO Not implemented yet
-    elif value.type == NodeValueType.FUNCTION:
-        return Function(node, value)
-    elif value.type == NodeValueType.ARRAY:
-        return [__to_python__(node, value.val_array[i]) for i in range(value.val_array_len)]
-    elif value.type == NodeValueType.BIGINT:
-        return int(__ffi__.string(value.val_big).decode())
-    elif value.type == NodeValueType.OBJECT:
-        data = {__ffi__.string(value.object_keys[i]).decode(): __to_python__(value.object_values[i]) for i in range(value.object_len)}
-        return SimpleNamespace(**data)
-    return None
+    def __str__(self):
+        return f"{self.name}@Node"
 
-def __to_node__(node, value):
-    v = __ffi__.new("NodeValue *")
-    __ffi__.release(v)
+def _to_node(node, value): # TODO SYMBOL
+    v = NodeValue()
     if not value:
-        v.type = NodeValueType.NULL
-    elif isinstance(value, (int, float)):
-        if isinstance(value, int) and not (-(2**53 - 1) <= value <= 2**53 - 1):
-            v.type = NodeValueType.BIGINT
-            v.val_big = __ffi__.new("char[]", str(value).encode("utf-8"))
-        else:
-            v.type = NodeValueType.NUMBER
-            v.val_num = float(value)
+        v.type = NULL_T
+    elif isinstance(value, bool):
+        v.type = BOOLEAN_T
+        v.val_bool = 1 if value else 0
+    elif isinstance(value, (int, bool)):
+        v.type = NUMBER
+        v.val_num = value
+    elif isinstance(value, str):
+        v.type = STRING
+        v.val_string = value.encode("utf-8")
     elif isinstance(value, (list, tuple, set)):
-        length = len(value)
-        arr = __ffi__.new("NodeValue[]", length)
-        for i in range(length):
-            arr[i] = __to_node__(node, value[i])
-        v.type = NodeValueType.ARRAY
-        v.val_array_len = length
+        v.type = ARRAY
+        val = list(value)
+        L = len(value)
+        arr = (NodeValue * L)()
+        for i in range(L):
+            arr[i] = _to_node(node, val[i])
+        v.val_array_len = L
         v.val_array = arr
     elif isinstance(value, dict):
-        v.type = NodeValueType.OBJECT
-        length = len(value)
-        v.object_len = length
-        keys_p = []
-        vals = __ffi__.new("NodeValue[]", length)
-        i = 0
-        for key in value:
-            keys_p[i] = __ffi__.new("char[]]", key.encode("utf-8"))
-            vals[i] = __to_node__(node, value[key])
-            i += 1
-        v.object_keys = __ffi__.new("char*[]", keys_p)
-        v.object_values = vals
-    elif isinstance(value, str):
-        print(f"Converting string {value} to ")
-        v.type = NodeValueType.STRING
-        v.val_string = __ffi__.new("char[]", value.encode("utf-8"))
+        v.type = OBJECT
+        L = len(value)
+        keys = list(value.keys())
+        values = (NodeValue * L)()
+        for i in range(L):
+            values[i] = _to_node(node, value[keys[i]])
+        keys = [key.encode("utf-8") for key in keys]
+        n_keys = (ctypes.c_char_p * L)(*keys)
+        v.object_len = L
+        v.object_keys = n_keys
+        v.object_values = values
     else:
-        v.type = NodeValueType.STRING
-        v.val_string = __ffi__.new("char[]", value.__str__().encode("utf-8"))
-    return v[0]
+        v.type = STRING
+        v.val_string = value.__str__().encode("utf-8")
+    return v
+
+def _to_python(node, value: NodeValue): # TODO SYMBOL
+    if value.type == BOOLEAN_T:
+        return bool(value.val_bool)
+    elif value.type == NUMBER:
+        return value.val_num
+    elif value.type == STRING:
+        return value.val_string.decode("utf-8")
+    elif value.type == FUNCTION:
+        return Func(value.function_name, node, value)
+    elif value.type == ARRAY:
+        arr = []
+        L = value.val_array_len
+        for i in range(L):
+            arr.append(_to_python(node, value.val_array[i]))
+        return arr
+    elif value.type == BIGINT:
+        return int(value.val_big.decode("utf-8"))
+    elif value.type == OBJECT:
+        obj = {}
+        L = value.object_len
+        for i in range(L):
+            obj[value.object_keys[i].decode("utf-8")] = _to_python(node, value.object_values[i])
+        return obj
+    return None
 
 class Node:
-
     def __init__(self, thread_pool_size=1):
-        self.__context__ = __setup__()
-        self.__values__ = []
-        error = __lib__.NodeContext_Init(self.__context__, thread_pool_size)
+        self.cleaned = False
+        self.__context__ = _lib.NodeContext_Create()
+
+        argc = 1
+        argv = (ctypes.c_char_p * argc)(__file__.encode("utf-8"))
+
+        error = _lib.NodeContext_Setup(self.__context__, 1, argv)
         if not error == 0:
-            raise Exception(f"Failed to initialize node: Error {error}")
+            raise Exception("Failed to setup node.")
+        error = _lib.NodeContext_Init(self.__context__, thread_pool_size)
+        if not error == 0:
+            raise Exception("Failed to init node.")
 
     def eval(self, code: str):
-        value = __lib__.NodeContext_Run_Script(self.__context__, __ffi__.new("char[]", code.encode("utf-8")))
-        Node.__values__ = value
-        return __to_python__(self, value)
+        return _to_python(self, _lib.NodeContext_Run_Script(self.__context__, code.encode("utf-8")))
+
+    def run(self, fp: Union[str, Path]):
+        eval(Path(fp).read_text("utf-8"))
 
     def stop(self):
-        __lib__.NodeContext_Stop(self.__context__)
+        _lib.NodeContext_Stop(self.__context__)
 
     def dispose(self):
-        for v in self.__values__:
-            __lib__.Node_Dispose_Value(v)
-        self.__values__.clear()
-        __lib__.NodeContext_Stop(self.__context__)
-        __lib__.NodeContext_Destroy(self.__context__)
-        __lib__.NodeContext_Dispose(self.__context__)
+        self.cleaned = True
+        self.stop()
+        _lib.NodeContext_Destroy(self.__context__)
+        _lib.NodeContext_Dispose(self.__context__)
 
     def __del__(self):
-        self.dispose()
+        self.stop()
+        if not self.cleaned:
+            self.dispose()
+
+
+if __name__ == "__main__":
+    node = Node()
+    node.eval("console.log('Hello, world');")
+
+    readFile = node.eval("""
+    const fs = require('fs');
+    
+    function readFile(filePath) {
+        return fs.readFileSync(filePath, 'utf8');
+    }
+    
+    readFile; // Returns readFile.
+    """)
+
+    print(readFile("simple.txt"))

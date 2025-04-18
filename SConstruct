@@ -35,8 +35,11 @@ def extract_archive(archive_path, extract_to):
         print_colored(f"Unsupported archive format: {archive_path}", Fore.RED)
 
 
+get_arch = lambda: {"x86_64": "amd64","aarch64": "arm64","arm64": "arm64","amd64": "amd64"}.get(machine := platform.machine().lower()) or (_ for _ in ()).throw(RuntimeError(f"Unsupported architecture: {machine}"))
+
+
 sys_info = get_system_info()
-ARCH = sys_info["ARCH"]
+ARCH = get_arch()
 OS = sys_info["OS"]
 ARC_EXT = "zip" if OS == "windows" else "tar.xz"
 

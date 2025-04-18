@@ -3,3 +3,41 @@ build
 lib
 pythonode.o
 .sconsign.dblite
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+*.egg
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# PyInstaller
+*.spec
+
+# Wheel caches
+*.whl
+
+# C extensions
+*.so
+*.pyd
+*.dll
+*.dylib
+
+# Mac/Unix metadata
+.DS_Store
+*.swp

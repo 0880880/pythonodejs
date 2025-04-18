@@ -202,27 +202,18 @@ int NodeContext_Init(NodeContext* context, int thread_pool_size) {
   context->global_ctx = std::move(global_ctx);
   Context::Scope context_scope(local_ctx);
 
-  v8::Global<v8::Function> require;
-
-  MaybeLocal<Value> loadenv_ret = node::LoadEnvironment(
+  v8::Local<v8::Function> require = v8::Local<v8::Function>::Cast(node::LoadEnvironment(
       env,
-      [&](const node::StartExecutionCallbackInfo& info) -> v8::MaybeLocal<Value> {
-        require.Reset(isolate, info.native_require);
-        return v8::Undefined(isolate);
-      }
-  );
-
-    v8::Local<v8::Object> global = local_ctx->Global();
-    global->Set(
-        local_ctx,
-        v8::String::NewFromUtf8(isolate, "require").ToLocalChecked(),
-        require.Get(isolate)
-    ).FromMaybe(false);
+      "const { createRequire } = require('module');"
+      "const publicRequire = createRequire(process.cwd() + '/');"
+      "globalThis.require = publicRequire;"
+	  "return globalThis.require;"
+  ).ToLocalChecked());
 
   exit_code = node::SpinEventLoop(env).FromMaybe(1);
 
-  v8::Local<v8::Value> vm_string[] = { v8::String::NewFromUtf8Literal(isolate, "vm") };
-  v8::Local<Value> vm = require.Get(isolate)->Call(
+  v8::Local<Value> vm_string[] = { v8::String::NewFromUtf8Literal(isolate, "vm") };
+  v8::Local<Value> vm = require->Call(
       isolate,
       local_ctx,
       local_ctx->Global(),
@@ -262,20 +253,18 @@ NodeValue NodeContext_Run_Script(NodeContext* context, const char* code) {
 }
 
 NodeValue NodeContext_Call_Function(NodeContext* context, NodeValue function, NodeValue* args, size_t args_length) {
+
     Locker locker(context->isolate);
     Isolate::Scope isolate_scope(context->isolate);
     HandleScope handle_scope(context->isolate);
     v8::Local<Context> local_ctx = context->global_ctx.Get(context->isolate);
-    Context::Scope context_scope(local_ctx);
-	v8::Local<v8::Function> func = function.function->function.Get(context->isolate);
-
     std::vector<v8::Local<v8::Value>> args_vec = {};
     for (int i = 0; i < args_length; i++) {
-        std::cout << "# C++ #" << std::endl; // DEBUG
-        std::cout << args[i].val_string << std::endl; // DEBUG
-        std::cout << "# C++ #" << std::endl; // DEBUG
         args_vec.push_back(to_v8_value(context, local_ctx, args[i]));
     }
+    Context::Scope context_scope(local_ctx);
+    v8::Local<v8::Function> func = function.function->function.Get(context->isolate);
+
   	v8::Local<v8::Value> result = func->Call(
 		context->isolate,
     	local_ctx,
@@ -303,4 +292,25 @@ void Node_Dispose_Value(NodeValue value) {
   if (value.function != nullptr) {
 		value.function->function.Reset();
   }
+}
+
+
+int main(int argc, char** argv) {
+    NodeContext* context = NodeContext_Create();
+    int exit_code = NodeContext_Setup(context, argc, argv);
+    if (exit_code != 0) {
+        NodeContext_Destroy(context);
+        return exit_code;
+    }
+
+    NodeContext_Init(context, 4);
+    NodeValue v = NodeContext_Run_Script(context, "const fs = require('fs');function readFile(filePath) {return fs.readFileSync(filePath, 'utf8');}readFile; // Returns readFile.");
+
+    NodeValue j = {.type = STRING, .val_string = "simple.txt"};
+    NodeValue n = NodeContext_Call_Function(context, v, &j, 1);
+    std::cout << n.val_string << std::endl;
+
+    NodeContext_Dispose(context);
+    NodeContext_Destroy(context);
+    return 0;
 }

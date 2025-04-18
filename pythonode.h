@@ -47,7 +47,6 @@ extern "C" {
     EXPORT void NodeContext_Destroy(NodeContext* context);
     EXPORT void NodeContext_Dispose(NodeContext* context);
 
-    EXPORT char* Node_Value_To_String(NodeValue value);
     EXPORT void Node_Dispose_Value(NodeValue value);
 
 #ifdef __cplusplus
