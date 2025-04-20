@@ -1,0 +1,57 @@
+name: Build 
+
+on:
+  workflow_call:
+
+
+jobs:
+  build:
+    name: Build shared libraries
+    runs-on: ${{matrix.os}}
+
+    permissions:
+      contents: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        arch: [amd64, arm64] 
+        versions: [v23.11.0]
+
+    steps:
+
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.12'
+
+      - name: Install SConstruct
+        run: pip install scons
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      
+
+      - name: Clone node repo
+        run: git clone https://github.com/nodejs/node --depth 1 --branch ${{ matrix.versions }} nodejs
+        env:
+          GIT_TERMINAL_PROMPT: 0
+
+      - name: Move necessery items to lib
+        run: |
+          mkdir -p pythonode/externals
+          mv nodejs/deps/uv pythonode/externals/uv
+          mv nodejs/deps/v8 pythonode/externals/v8
+          mv nodejs/src pythonode/externals/node
+
+      - name: Build binary
+        run: scons
+      
+      - name: Build wheels
+        run: |
+          python -m build --wheel
