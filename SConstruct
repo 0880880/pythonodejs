@@ -64,7 +64,7 @@ CXXFLAGS = ['-std=c++23']
 if not OS == 'windows':
     CXXFLAGS.append('-fPIC')
 INCLUDES = ['./pythonode/externals/node', './pythonode/externals/v8/include', './pythonode/externals/uv/include']
-LDFLAGS = ['-L./lib', '-lnode', '-shared']
+LDFLAGS = [f'-L{lib_dir.resolve()}', '-lnode', '-shared']
 
 if OS == 'windows':
     EXT = 'dll'
