@@ -74,11 +74,11 @@ else:
     EXT = 'so'
 
 env = Environment(
-                TOOLS=['clang', 'clang++', 'gnulink'],
-                ENV={'PATH': os.environ['PATH']},
-                CXXFLAGS=CXXFLAGS,
-                CPPPATH=INCLUDES,
-                LINKFLAGS=LDFLAGS
-                )
+    TOOLS=['clang', 'clang++', 'gnulink'],
+    ENV={'PATH': os.environ['PATH']},
+    CXXFLAGS=CXXFLAGS,
+    CPPPATH=INCLUDES,
+    LINKFLAGS=LDFLAGS
+)
 
 env.Program(target=str((pythonode_path / "lib" / f'pythonode-{OS}-{ARCH}.{EXT}').resolve()), source=['pythonode.cpp'])
