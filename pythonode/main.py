@@ -7,7 +7,7 @@ import os
 get_arch = lambda: {"x86_64": "amd64","aarch64": "arm64","arm64": "arm64","amd64": "amd64"}.get(machine := platform.machine().lower()) or (_ for _ in ()).throw(RuntimeError(f"Unsupported architecture: {machine}"))
 
 def _get_lib_path():
-    base_dir = os.path.dirname(os.path.dirname(__file__))
+    base_dir = os.path.dirname(__file__)
     lib_dir = os.path.join(base_dir, 'lib')
 
     system = platform.system().lower()
