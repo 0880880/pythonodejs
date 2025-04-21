@@ -1,2 +1,2 @@
 include pythonode/lib/*
-recursive-include pythonode/externals *.node *.so *.dll *.dylib *.h
+recursive-include pythonode/externals *
