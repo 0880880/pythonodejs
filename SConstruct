@@ -48,8 +48,8 @@ libnode_url = f"https://github.com/metacall/libnode/releases/download/v23.11.0/l
 
 pythonode_path = Path("./pythonode")
 
-lib_dir = Path("./lib")
-lib_dir.mkdir(exist_ok=True)
+lib_dir = Path("./pythonode/externals/libnode")
+lib_dir.mkdir(exist_ok=True, parents=True)
 
 print(f"Downloading libnode from \"{libnode_url}\"")
 
