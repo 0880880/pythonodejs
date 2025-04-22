@@ -10,6 +10,3 @@ dependencies = []
 [build-system]
 requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
-
-[tool.setuptools]
-python_requires = ">=3.9"
