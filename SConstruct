@@ -63,7 +63,7 @@ if not any(lib_dir.iterdir()):
 else:
     print("lib directory is not empty.")
 
-CXXFLAGS = ['-std=c++23']
+CXXFLAGS = ['-std=c++20']
 if not OS == 'windows':
     CXXFLAGS.append('-fPIC')
 INCLUDES = ['./pythonode/externals/node', './pythonode/externals/v8/include', './pythonode/externals/uv/include']
