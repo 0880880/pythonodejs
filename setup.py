@@ -6,8 +6,10 @@ from wheel.bdist_wheel import bdist_wheel as _bdist_wheel
 class bdist_wheel(_bdist_wheel):
     def finalize_options(self):
         super().finalize_options()
-        # force platform tag
+        # Mark as non-pure Python since it includes platform-specific files
         self.root_is_pure = False
+        # Set Python tag to be generic for Python 3.x
+        self.python_tag = "py3"
 
 external_files = [
     f.replace("pythonode/", "", 1)
@@ -23,9 +25,5 @@ setup(
     package_data={"pythonode": ["lib/*", *external_files]},
     zip_safe=False,
     cmdclass={"bdist_wheel": bdist_wheel},
-    options={
-        "bdist_wheel": {
-            "universal": True
-        }
-    }
+    python_requires=">=3.6",  # Specify minimum Python version
 )
