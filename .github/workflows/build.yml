@@ -33,13 +33,11 @@ jobs:
       - name: Install SConstruct
         run: pip install scons
 
-      - name: Update
+      - name: Update setuptools, pip, and wheel
         run: python -m pip install --upgrade pip setuptools wheel
 
       - name: Install dependencies
         run: pip install -r requirements.txt
-
-      
 
       - name: Clone node repo
         run: git clone https://github.com/nodejs/node --depth 1 --branch ${{ matrix.versions }} nodejs
@@ -55,6 +53,9 @@ jobs:
 
       - name: Build binary
         run: scons
+
+      - name: Validate Build Environment
+        run: python setup.py check
       
       - name: Build wheels
         run: |
