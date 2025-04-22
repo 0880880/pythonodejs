@@ -22,5 +22,4 @@ setup(
     package_data={"pythonode": ["lib/*", *external_files]},
     zip_safe=False,
     cmdclass={"bdist_wheel": bdist_wheel},
-    python_requires=">=3.9",  # Specify minimum Python version
 )
