@@ -41,10 +41,13 @@ get_arch = lambda: {"x86_64": "amd64","aarch64": "arm64","arm64": "arm64","amd64
 sys_info = get_system_info()
 ARCH = get_arch()
 OS = sys_info["OS"]
+LIBNODE_OS = OS
+if OS == "darwin":
+    LIBNODE_OS = "macos"
 ARC_EXT = "zip" if OS == "windows" else "tar.xz"
 
 
-libnode_url = f"https://github.com/metacall/libnode/releases/download/v23.11.0/libnode-{ARCH}-{OS}.{ARC_EXT}"
+libnode_url = f"https://github.com/metacall/libnode/releases/download/v23.11.0/libnode-{ARCH}-{LIBNODE_OS}.{ARC_EXT}"
 
 pythonode_path = Path("./pythonode")
 
