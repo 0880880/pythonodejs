@@ -8,5 +8,5 @@ authors = [{name = "0880880"}]
 dependencies = []
 
 [build-system]
-requires = ["setuptools"]
+requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
