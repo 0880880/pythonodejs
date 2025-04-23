@@ -1,2 +1,2 @@
-include pythonode/lib/*
-recursive-include pythonode/externals *
+include pythonodejs/lib/*
+recursive-include pythonodejs/externals *

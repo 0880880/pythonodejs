@@ -9,17 +9,17 @@ class bdist_wheel(_bdist_wheel):
         self.root_is_pure = False
 
 external_files = [
-    f.replace("pythonode/", "", 1)
-    for f in glob.glob("pythonode/external/**/*", recursive=True)
+    f.replace("pythonodejs/", "", 1)
+    for f in glob.glob("pythonodejs/external/**/*", recursive=True)
     if not f.endswith("/")
 ]
 
 setup(
-    name="pythonode",
+    name="pythonodejs",
     version="0.1.3",
     packages=find_packages(),
     include_package_data=True,
-    package_data={"pythonode": ["lib/*", *external_files]},
+    package_data={"pythonodejs": ["lib/*", *external_files]},
     zip_safe=False,
     cmdclass={"bdist_wheel": bdist_wheel},
 )

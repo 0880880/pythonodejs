@@ -49,9 +49,9 @@ ARC_EXT = "zip" if OS == "windows" else "tar.xz"
 
 libnode_url = f"https://github.com/metacall/libnode/releases/download/v23.11.0/libnode-{ARCH}-{LIBNODE_OS}.{ARC_EXT}"
 
-pythonode_path = Path("./pythonode")
+pythonode_path = Path("./pythonodejs")
 
-lib_dir = Path("./pythonode/externals/libnode")
+lib_dir = Path("./pythonodejs/externals/libnode")
 lib_dir.mkdir(exist_ok=True, parents=True)
 
 print(f"Downloading libnode from \"{libnode_url}\"")
@@ -66,7 +66,7 @@ else:
 CXXFLAGS = ['-std=c++20']
 if not OS == 'windows':
     CXXFLAGS.append('-fPIC')
-INCLUDES = ['./pythonode/externals/node', './pythonode/externals/v8/include', './pythonode/externals/uv/include']
+INCLUDES = ['./pythonodejs/externals/node', './pythonodejs/externals/v8/include', './pythonodejs/externals/uv/include']
 LDFLAGS = [f'-L{lib_dir.resolve()}', '-lnode', '-shared']
 
 if OS == 'windows':
@@ -84,4 +84,4 @@ env = Environment(
     LINKFLAGS=LDFLAGS
 )
 
-env.Program(target=str((pythonode_path / "lib" / f'pythonode-{OS}-{ARCH}.{EXT}').resolve()), source=['pythonode.cpp'])
+env.Program(target=str((pythonode_path / "lib" / f'pythonodejs-{OS}-{ARCH}.{EXT}').resolve()), source=['pythonodejs.cpp'])

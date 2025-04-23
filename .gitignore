@@ -1,5 +1,5 @@
 .venv
 build
 lib
-pythonode.o*
+pythonodejs.o*
 .sconsign.dblite

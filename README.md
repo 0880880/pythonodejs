@@ -1,13 +1,13 @@
-# pythonode
+# pythonodejs
 Embed Node.js natively in Python.
 
 ```
-pip install pythonode
+pip install pythonodejs
 ```
 
 ## Usage
 ```py
-from pythonode import Node
+from pythonodejs import Node
 
 node = Node()
 node.eval("console.log('Hello, world');")
