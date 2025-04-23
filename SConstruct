@@ -66,7 +66,7 @@ else:
 CXXFLAGS = ['-std=c++20']
 if not OS == 'windows':
     CXXFLAGS.append('-fPIC')
-INCLUDES = ['./pythonodejs/externals/node', './pythonodejs/externals/v8/include', './pythonodejs/externals/uv/include']
+INCLUDES = ['./external/node', './external/v8/include', './external/uv/include']
 LDFLAGS = [f'-L{lib_dir.resolve()}', '-lnode', '-shared']
 
 if OS == 'windows':
