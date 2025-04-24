@@ -1,6 +1,6 @@
 # setup.py
 import glob
-from setuptools import find_packages, setup
+from setuptools import find_packages, setup, Extension
 from wheel.bdist_wheel import bdist_wheel as _bdist_wheel
 
 class bdist_wheel(_bdist_wheel):
@@ -14,10 +14,17 @@ external_files = [
     if not f.endswith("/")
 ]
 
+ext = Extension(
+    "pythonodejs",
+    sources=["src/binding.cpp"],
+    language="c++",
+)
+
 setup(
     name="pythonodejs",
     version="0.1.3",
     packages=find_packages(),
+    ext_modules=[ext],
     include_package_data=True,
     package_data={"pythonodejs": ["lib/*", *external_files]},
     zip_safe=False,

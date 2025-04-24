@@ -59,11 +59,11 @@ jobs:
       
       - name: Build wheels
         run: |
-          pip install build
-          python3 -m build --wheel
+          pip install cibuildwheel
+          cibuildwheel
 
       - name: Upload Binary artifacts
         uses: actions/upload-artifact@v4
         with:
           name: pythonode-${{ matrix.os }}-${{ matrix.arch }}-${{ matrix.versions }}-${{ matrix.py }}
-          path: dist/
+          path: wheelhouse/
