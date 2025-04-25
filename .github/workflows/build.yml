@@ -55,7 +55,7 @@ jobs:
         run: scons
 
       - name: Tree
-        shell: tree
+        shell: python tree.py
 
       - name: Move libnode
         shell: bash
