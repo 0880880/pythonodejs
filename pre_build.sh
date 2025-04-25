@@ -1,6 +1,12 @@
 #!/bin/bash
 set -e
 
+echo "🧰 Installing Clang..."
+yum install -y clang llvm
+
+export CC=clang
+export CXX=clang++
+
 echo "⬆️  Updating pip, setuptools, and wheel..."
 python -m pip install --upgrade pip setuptools wheel
 
