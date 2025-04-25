@@ -52,16 +52,13 @@ jobs:
           mv nodejs/src pythonodejs/externals/node
 
       - name: Build binary
-        if: runner.os != 'Linux'
         run: scons
 
       - name: Move libnode
-        if: runner.os != 'Linux'
         shell: bash
         run: mv pythonodejs/externals/libnode/* pythonodejs/lib/
 
       - name: Tree
-        if: runner.os != 'Linux'
         run: python tree.py . --max-files 20000 --ignore .git v8 node
 
       - name: Add rpath (macOS)
@@ -69,7 +66,6 @@ jobs:
         run: install_name_tool -add_rpath pythonodejs/lib/ pythonodejs/lib/pythonodejs.dylib
 
       - name: Validate Build Environment
-        if: runner.os != 'Linux'
         run: python setup.py check
       
       - name: Build wheels
