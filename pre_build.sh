@@ -19,6 +19,14 @@ if [[ "$(uname)" == "Linux" ]]; then
     conda activate clang10
     conda install -y -c conda-forge libcxx
 
+    export CPLUS_INCLUDE_PATH=$CONDA_PREFIX/include/c++/v1
+    export LIBRARY_PATH=$CONDA_PREFIX/lib
+    export LD_LIBRARY_PATH=$CONDA_PREFIX/lib
+
+    # tell clang to use libc++ (both compile-time and link-time)
+    export CXXFLAGS="-stdlib=libc++"
+    export LDFLAGS="-stdlib=libc++"
+
     clang++ --version
 
     echo "⬆️  Updating pip, setuptools, and wheel..."
