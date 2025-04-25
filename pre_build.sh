@@ -15,7 +15,7 @@ if [[ "$(uname)" == "Linux" ]]; then
     export CXX=clang++
 
     yum install -y devtoolset-9
-    scl enable devtoolset-9 bash
+    source /opt/rh/devtoolset-9/enable
 
     echo "⬆️  Updating pip, setuptools, and wheel..."
     python -m pip install --upgrade pip setuptools wheel
