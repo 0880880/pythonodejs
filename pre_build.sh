@@ -17,6 +17,7 @@ if [[ "$(uname)" == "Linux" ]]; then
     conda init bash
     source ~/.bashrc
     conda activate clang10
+    conda install -y -c conda-forge libcxx
 
     clang++ --version
 
