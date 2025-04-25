@@ -1,43 +1,39 @@
 #!/bin/bash
 set -e
 
-echo "🧰 Installing Clang..."
-yum install -y clang llvm
+if [[ "$(uname)" == "Linux" ]]; then
+    echo "Running on Linux"
 
-export CC=clang
-export CXX=clang++
+    echo "🧰 Installing Clang..."
+    rpm -Uvh https://packages.llvm.org/apt/llvm-org.repo
+    yum install clang
 
-echo "⬆️  Updating pip, setuptools, and wheel..."
-python -m pip install --upgrade pip setuptools wheel
+    export CC=clang
+    export CXX=clang++
 
-echo "📦 Installing build dependencies..."
-pip install -r requirements.txt
+    echo "⬆️  Updating pip, setuptools, and wheel..."
+    python -m pip install --upgrade pip setuptools wheel
 
-echo "🛠️  Installing SCons..."
-pip install scons
+    echo "📦 Installing build dependencies..."
+    pip install -r requirements.txt
 
-echo "🔧 Building native binary..."
-scons
+    echo "🛠️  Installing SCons..."
+    pip install scons
 
-echo "📂 Moving libnode files..."
-mv pythonodejs/externals/libnode/* pythonodejs/lib/
+    echo "🔧 Building native binary..."
+    scons
 
-#echo "📁 Tree view (ignoring .git, v8, node)..."
-#python tree.py . --max-files 20000 --ignore .git v8 node
+    echo "📂 Moving libnode files..."
+    mv pythonodejs/externals/libnode/* pythonodejs/lib/
 
-unameOut="$(uname -s)"
-case "${unameOut}" in
-    Darwin)
-        echo "🔗 Adding rpath for macOS..."
-        install_name_tool -add_rpath pythonodejs/lib/ pythonodejs/lib/pythonodejs.dylib
-        ;;
-    MINGW*|MSYS*|CYGWIN*)
-        echo "ℹ️ Windows detected — no rpath changes needed."
-        ;;
-    *)
-        echo "🐧 Linux detected — no rpath changes needed."
-        ;;
-esac
+    #echo "📁 Tree view (ignoring .git, v8, node)..."
+    #python tree.py . --max-files 20000 --ignore .git v8 node
 
-echo "✅ Validating build environment..."
-python setup.py check
+    echo "✅ Validating build environment..."
+    python setup.py check
+
+else
+    echo "This script is only for Linux"
+    exit 1
+fi
+
