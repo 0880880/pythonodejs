@@ -84,4 +84,4 @@ env = Environment(
     LINKFLAGS=LDFLAGS
 )
 
-env.Program(target=str((pythonode_path / "lib" / f'pythonodejs-{OS}-{ARCH}.{EXT}').resolve()), source=['pythonodejs.cpp'])
+env.Program(target=str((pythonode_path / "lib" / f'pythonodejs.{EXT}').resolve()), source=['pythonodejs.cpp'])
