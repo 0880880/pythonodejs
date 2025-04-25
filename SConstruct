@@ -69,12 +69,12 @@ if not OS == 'windows':
 INCLUDES = ['./pythonodejs/externals/node', './pythonodejs/externals/v8/include', './pythonodejs/externals/uv/include']
 LDFLAGS = [f'-L{lib_dir.resolve()}', '-lnode', '-shared']
 
+EXT = "so"
+
 if OS == 'windows':
     EXT = 'dll'
 elif OS == 'darwin':
     EXT = 'dylib'
-else:
-    EXT = 'so'
 
 env = Environment(
     TOOLS=['clang', 'clang++', 'gnulink'],

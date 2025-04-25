@@ -54,12 +54,12 @@ jobs:
       - name: Build binary
         run: scons
 
-      - name: Tree
-        run: python tree.py . --max-files 20000 --ignore .git v8 node
-
       - name: Move libnode
         shell: bash
         run: mv pythonodejs/externals/libnode/* pythonodejs/lib/
+
+      - name: Tree
+        run: python tree.py . --max-files 20000 --ignore .git v8 node
 
       - name: Validate Build Environment
         run: python setup.py check
