@@ -84,4 +84,10 @@ env = Environment(
     LINKFLAGS=LDFLAGS
 )
 
+env.Append(
+  CXXFLAGS=["-stdlib=libc++"],
+  LINKFLAGS=["-stdlib=libc++"],
+  CPPPATH=[os.environ["CONDA_PREFIX"] + "/include/c++/v1"],
+)
+
 env.Program(target=str((pythonode_path / "lib" / f'pythonodejs.{EXT}').resolve()), source=['pythonodejs.cpp'])
