@@ -5,8 +5,11 @@ if [[ "$(uname)" == "Linux" ]]; then
     echo "Running on Linux"
 
     echo "🧰 Installing Clang..."
-    rpm -Uvh https://packages.llvm.org/apt/llvm-org.repo
-    yum install clang
+    yum install -y curl xz
+    curl -SL https://github.com/llvm/llvm-project/releases/download/llvmorg-10.0.0/clang+llvm-10.0.0-x86_64-linux-gnu-ubuntu-18.04.tar.xz | tar -xJ
+    mv clang+llvm-10.0.0-x86_64-linux-gnu-ubuntu-18.04 /opt/clang_10
+    export PATH=/opt/clang_10/bin:$PATH
+    export LD_LIBRARY_PATH=/opt/clang_10/lib:$LD_LIBRARY_PATH
 
     export CC=clang
     export CXX=clang++
