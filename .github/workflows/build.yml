@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, ubuntu-24.04-arm, windows-latest, macos-13, macos-14]
         arch: [amd64] 
         py: ['3.12']
         versions: [v23.11.0]
