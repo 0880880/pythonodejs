@@ -36,7 +36,6 @@ if [[ "$(uname)" == "Linux" ]]; then
     python setup.py check
 
 else
-    echo "This script is only for Linux"
-    exit 1
+    echo "Skipping (Linux only)"
 fi
 
