@@ -63,7 +63,7 @@ jobs:
 
       - name: Add rpath (macOS)
         if: runner.os == 'macOS'
-        run: install_name_tool -add_rpath pythonodejs/lib/ pythonodejs/lib/pythonodejs-darwin-arm64.dylib
+        run: install_name_tool -add_rpath pythonodejs/lib/ pythonodejs/lib/pythonodejs.dylib
 
       - name: Validate Build Environment
         run: python setup.py check
