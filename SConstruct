@@ -76,6 +76,11 @@ elif OS == 'darwin':
 else:
     EXT = 'so'
 
+dst_lib = pythonode_path / "lib"
+
+for item in lib_dir.iterdir():
+    shutil.move(str(item), dst_lib / item.name)
+
 env = Environment(
     TOOLS=['clang', 'clang++', 'gnulink'],
     ENV={'PATH': os.environ['PATH']},
