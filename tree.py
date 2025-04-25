@@ -57,7 +57,7 @@ def main():
         description="Tree view of file system showing sizes, skipping dirs over N files.")
     parser.add_argument('root', nargs='?', default='.',
                         help='Root directory to scan')
-    parser.add_argument('--max-files', '-m', type=int, default=1000,
+    parser.add_argument('--max-files', '-m', type=int, default=20000,
                         help='Skip dirs with more than this many files')
     args = parser.parse_args()
 
