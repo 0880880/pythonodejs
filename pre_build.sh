@@ -6,12 +6,16 @@ if [[ "$(uname)" == "Linux" ]]; then
 
     echo "🧰 Installing Clang..."
     yum install -y curl xz
-    curl -SL https://github.com/llvm/llvm-project/releases/download/llvmorg-10.0.0/clang+llvm-10.0.0-x86_64-linux-gnu-centos7.tar.xz \
-      | tar -xJ
+    # download & run the Miniforge3 installer for Linux x86_64
+    curl -LO https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh
+    bash Miniforge3-Linux-x86_64.sh -b -p $HOME/miniforge
+    export PATH=$HOME/miniforge/bin:$PATH
 
-    mv clang+llvm-10.0.0-x86_64-linux-gnu-centos7 /opt/clang_10
-    export PATH=/opt/clang_10/bin:$PATH
-    export LD_LIBRARY_PATH=/opt/clang_10/lib:$LD_LIBRARY_PATH
+    conda create -n clang10 \
+      -c conda-forge/label/llvm_dev clangdev=10.* llvmdev=10.* \
+      -y
+
+    conda activate clang10
 
     clang++ --version
 
