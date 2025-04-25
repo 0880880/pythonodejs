@@ -4,7 +4,7 @@ import argparse
 from collections import defaultdict
 
 def human_readable(size, decimal_places=1):
-    for unit in ['B','K','M','G','T','P', 'E']:
+    for unit in ['B','K','M','G','T','P','E']:
         if size < 1024:
             return f"{size:.{decimal_places}f}{unit}"
         size /= 1024
@@ -34,29 +34,44 @@ def print_tree(path, stats, max_files, prefix=''):
     size = stats[path]['size']
     name = os.path.basename(path) or path
     line = f"{prefix}{name}/  [{human_readable(size)}, {count} files]"
-    # Always print node
     if prefix and count > max_files:
         print(line + f"  (skipped >{max_files} files)")
         return
     print(line)
 
+    # get subdirectories and files
     try:
-        children = [os.path.join(path, d) for d in os.listdir(path)
-                    if os.path.isdir(os.path.join(path, d))]
+        entries = os.listdir(path)
     except OSError:
         return
-    # sort by size descending
-    children.sort(key=lambda p: stats[p]['size'], reverse=True)
-    for i, child in enumerate(children):
-        joint = '└── ' if i == len(children)-1 else '├── '
-        new_prefix = prefix + ('    ' if i == len(children)-1 else '│   ')
-        print_tree(child, stats, max_files, prefix + joint)
+    dirs = [e for e in entries if os.path.isdir(os.path.join(path, e))]
+    files = [e for e in entries if os.path.isfile(os.path.join(path, e))]
+
+    # sort dirs by size desc, files by size desc
+    dirs.sort(key=lambda d: stats.get(os.path.join(path, d), {}).get('size', 0), reverse=True)
+    files.sort(key=lambda f: os.path.getsize(os.path.join(path, f)), reverse=True)
+
+    # print directories
+    for i, d in enumerate(dirs):
+        is_last = (i == len(dirs) - 1) and not files
+        joint = '└── ' if is_last else '├── '
+        new_prefix = prefix + ('    ' if is_last else '│   ')
+        print_tree(os.path.join(path, d), stats, max_files, prefix + joint)
+
+    # print files
+    for i, f in enumerate(files):
+        is_last = (i == len(files) - 1)
+        joint = '└── ' if is_last else '├── '
+        try:
+            fsize = os.path.getsize(os.path.join(path, f))
+        except OSError:
+            fsize = 0
+        print(f"{prefix}{joint}{f}  [{human_readable(fsize)}]")
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Tree view of file system showing sizes, skipping dirs over N files.")
-    parser.add_argument('root', nargs='?', default='.',
-                        help='Root directory to scan')
+        description="Tree view with sizes, listing files, skipping dirs over N files.")
+    parser.add_argument('root', nargs='?', default='.', help='Root directory to scan')
     parser.add_argument('--max-files', '-m', type=int, default=20000,
                         help='Skip dirs with more than this many files')
     args = parser.parse_args()
