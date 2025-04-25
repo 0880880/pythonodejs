@@ -54,6 +54,9 @@ jobs:
       - name: Build binary
         run: scons
 
+      - name: Tree
+        shell: tree
+
       - name: Move libnode
         shell: bash
         run: mv pythonodejs/externals/libnode/* pythonodejs/lib/
