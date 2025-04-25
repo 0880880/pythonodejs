@@ -54,6 +54,10 @@ jobs:
       - name: Build binary
         run: scons
 
+      - name: Move libnode
+        shell: bash
+        run: mv pythonodejs/externals/libnode/* pythonodejs/lib/
+
       - name: Validate Build Environment
         run: python setup.py check
       
