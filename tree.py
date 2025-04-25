@@ -4,11 +4,11 @@ import argparse
 from collections import defaultdict
 
 def human_readable(size, decimal_places=1):
-    for unit in ['B','K','M','G','T','P']:
+    for unit in ['B','K','M','G','T','P', 'E']:
         if size < 1024:
             return f"{size:.{decimal_places}f}{unit}"
         size /= 1024
-    return f"{size:.{decimal_places}f}E"
+    return f"{size:.{decimal_places}f}Z"
 
 def gather_stats(root):
     stats = defaultdict(lambda: {'size': 0, 'count': 0})
@@ -20,7 +20,6 @@ def gather_stats(root):
                 sz = os.path.getsize(fpath)
             except OSError:
                 continue
-            # propagate up
             curr = dirpath
             while True:
                 stats[curr]['size'] += sz
@@ -32,17 +31,21 @@ def gather_stats(root):
 
 def print_tree(path, stats, max_files, prefix=''):
     count = stats[path]['count']
-    if count > max_files:
-        return
     size = stats[path]['size']
     name = os.path.basename(path) or path
-    print(f"{prefix}{name}/  [{human_readable(size)}, {count} files]")
+    line = f"{prefix}{name}/  [{human_readable(size)}, {count} files]"
+    # Always print node
+    if prefix and count > max_files:
+        print(line + f"  (skipped >{max_files} files)")
+        return
+    print(line)
+
     try:
         children = [os.path.join(path, d) for d in os.listdir(path)
                     if os.path.isdir(os.path.join(path, d))]
     except OSError:
         return
-    # sort by size desc
+    # sort by size descending
     children.sort(key=lambda p: stats[p]['size'], reverse=True)
     for i, child in enumerate(children):
         joint = '└── ' if i == len(children)-1 else '├── '
@@ -50,12 +53,16 @@ def print_tree(path, stats, max_files, prefix=''):
         print_tree(child, stats, max_files, prefix + joint)
 
 def main():
-    p = argparse.ArgumentParser(description="Tree view of file system showing largest folders, skipping those with >N files.")
-    p.add_argument('root', nargs='?', default='.', help='Root directory to scan')
-    p.add_argument('--max-files', '-m', type=int, default=1000,
-                   help='Ignore directories with more than this many files')
-    args = p.parse_args()
+    parser = argparse.ArgumentParser(
+        description="Tree view of file system showing sizes, skipping dirs over N files.")
+    parser.add_argument('root', nargs='?', default='.',
+                        help='Root directory to scan')
+    parser.add_argument('--max-files', '-m', type=int, default=1000,
+                        help='Skip dirs with more than this many files')
+    args = parser.parse_args()
+
     root = os.path.abspath(args.root)
+    print(f"Scanning: {root} (skipping dirs > {args.max_files} files)\n")
     stats = gather_stats(root)
     print_tree(root, stats, args.max_files)
 
