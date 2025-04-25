@@ -14,7 +14,8 @@ if [[ "$(uname)" == "Linux" ]]; then
     conda create -n clang10 \
       -c conda-forge/label/llvm_dev clangdev=10.* llvmdev=10.* \
       -y
-    conda init
+    conda init bash
+    source ~/.bashrc
     conda activate clang10
 
     clang++ --version
