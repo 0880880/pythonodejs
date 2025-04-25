@@ -55,7 +55,7 @@ jobs:
         run: scons
 
       - name: Tree
-        run: python tree.py .
+        run: python tree.py . --max-files 20000 --ignore .git v8 node
 
       - name: Move libnode
         shell: bash
