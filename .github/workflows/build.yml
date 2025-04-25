@@ -61,9 +61,9 @@ jobs:
       - name: Tree
         run: python tree.py . --max-files 20000 --ignore .git v8 node
 
-      - name: Split fat binary (macOS)
+      - name: Add rpath (macOS)
         if: runner.os == 'macOS'
-        run: lipo pythonodejs/lib/libnode.131.dylib -thin arm64 -output libnode.131.dylib
+        run: install_name_tool -add_rpath pythonodejs/lib/ libnode.131.dylib
 
       - name: Validate Build Environment
         run: python setup.py check
