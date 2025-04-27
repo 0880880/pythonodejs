@@ -5,23 +5,7 @@ if [[ "$(uname)" == "Linux" ]]; then
     echo "Running on Linux"
 
     echo "🧰 Installing Clang..."
-    yum install -y curl xz
-    # download & run the Miniforge3 installer for Linux x86_64
-    curl -LO https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh
-    bash Miniforge3-Linux-x86_64.sh -b -p $HOME/miniforge
-    export PATH=$HOME/miniforge/bin:$PATH
-
-    conda create -n clang10 \
-      -c conda-forge/label/llvm_dev clangdev=10.* llvmdev=10.* \
-      -y
-    conda init bash
-    source ~/.bashrc
-    conda activate clang10
-    conda install -y -c conda-forge libcxx
-
-    export CPLUS_INCLUDE_PATH=$CONDA_PREFIX/include/c++/v1
-    export LIBRARY_PATH=$CONDA_PREFIX/lib
-    export LD_LIBRARY_PATH=$CONDA_PREFIX/lib
+    yum install -y clang
 
     # tell clang to use libc++ (both compile-time and link-time)
     export CXXFLAGS="-stdlib=libc++"
