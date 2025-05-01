@@ -16,7 +16,6 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, ubuntu-24.04-arm, windows-latest, macos-13, macos-14]
-        arch: [amd64] 
         py: ['3.12']
         versions: [v23.11.0]
 
@@ -76,11 +75,11 @@ jobs:
         env:
           MACOSX_DEPLOYMENT_TARGET: 14.0
         run: |
-          pip install cibuildwheel --manylinux 2_28
+          pip install cibuildwheel
           cibuildwheel
 
       - name: Upload Binary artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: pythonode-${{ matrix.os }}-${{ matrix.arch }}-${{ matrix.versions }}-${{ matrix.py }}
+          name: pythonode-${{ matrix.os }}-${{ matrix.versions }}
           path: wheelhouse/
