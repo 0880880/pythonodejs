@@ -47,7 +47,7 @@ if OS == "darwin":
 ARC_EXT = "zip" if OS == "windows" else "tar.xz"
 
 
-libnode_url = f"https://github.com/metacall/libnode/releases/download/v23.11.0/libnode-{ARCH}-{LIBNODE_OS}.{ARC_EXT}"
+libnode_url = f"https://github.com/0880880/libnode/releases/download/v23.11.0/libnode-{ARCH}-{LIBNODE_OS}.{ARC_EXT}"
 
 pythonode_path = Path("./pythonodejs")
 
