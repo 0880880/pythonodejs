@@ -60,7 +60,7 @@ jobs:
         run: mv pythonodejs/externals/libnode/* pythonodejs/lib/
 
       - name: Tree
-        if: runner.os != 'Linux'
+        if: runner.os != 'Windows'
         run: python tree.py . --max-files 20000 --ignore .git v8 node
 
       - name: Add rpath (macOS)
