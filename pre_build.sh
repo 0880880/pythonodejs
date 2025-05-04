@@ -25,6 +25,8 @@ if [[ "$(uname)" == "Linux" ]]; then
     echo "🔧 Building native binary..."
     scons
 
+    python tree.py . --max-files 20000 --ignore .git v8 node
+
     echo "📂 Moving libnode files..."
     mv pythonodejs/externals/libnode/* pythonodejs/lib/
 
