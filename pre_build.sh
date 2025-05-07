@@ -3,6 +3,8 @@ set -e
 
 if [[ "$(uname)" == "Linux" ]]; then
     echo "Running on Linux"
+    cd pythonodejs
+    pwd
 
     echo "🧰 Installing Clang..."
     yum install -y clang
