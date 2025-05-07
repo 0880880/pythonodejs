@@ -1,2 +1,2 @@
-include pythonodejs/lib/*
+include pythonodejs/lib/* project/pythonodejs/lib/*
 recursive-include pythonodejs/externals *
