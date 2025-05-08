@@ -6,8 +6,8 @@ if [[ "$(uname)" == "Linux" ]]; then
     cd pythonodejs
     pwd
 
-    echo "🧰 Installing Clang..."
-    yum install -y clang
+    echo "🧰 Installing Clang and build tools..."
+    yum install -y clang patchelf
 
     # tell clang to use libc++ (both compile-time and link-time)
     export CXXFLAGS="-stdlib=libc++"
@@ -30,15 +30,15 @@ if [[ "$(uname)" == "Linux" ]]; then
     echo "📂 Moving libnode files..."
     mv pythonodejs/externals/libnode/* pythonodejs/lib/
 
-    #echo "📁 Tree view (ignoring .git, v8, node)..."
-    #python tree.py . --max-files 20000 --ignore .git v8 node
+    echo "🔧 Running Linux-specific library fixes..."
+    python ./fix_linux_libs.py
+
+    echo "📁 Tree view (ignoring .git, v8, node)..."
+    python tree.py . --max-files 20000 --ignore .git v8 node
 
     echo "✅ Validating build environment..."
     python setup.py check
 
-    python tree.py . --max-files 20000 --ignore .git v8 node
-
 else
     echo "Skipping (Linux only)"
 fi
-
