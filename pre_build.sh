@@ -5,7 +5,15 @@ if [[ "$(uname)" == "Linux" ]]; then
     echo "Running on Linux"
 
     echo "🧰 Installing Clang and build tools..."
-    yum install -y clang
+    if command -v apk >/dev/null 2>&1; then
+        apk add clang
+    elif command -v yum >/dev/null 2>&1; then
+        yum install -y clang
+    else
+        echo "No supported package manager found" >&2
+        exit 1
+    fi
+
 
     # tell clang to use libc++ (both compile-time and link-time)
     export CXXFLAGS="-stdlib=libc++"
