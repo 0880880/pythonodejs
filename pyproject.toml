@@ -15,6 +15,3 @@ build-backend = "setuptools.build_meta"
 build = "cp39-* cp310-* cp311-*"
 skip = "pp*"
 before-build = "bash ./pre_build.sh"
-
-[tool.cibuildwheel.linux]
-architectures = ["x86_64", "aarch64"]
