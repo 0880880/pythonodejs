@@ -1,2 +1,1 @@
 include pythonodejs/lib/* 
-recursive-include pythonodejs/externals 
