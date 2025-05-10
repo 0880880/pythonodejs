@@ -35,7 +35,7 @@ def extract_archive(archive_path, extract_to):
         print_colored(f"Unsupported archive format: {archive_path}", Fore.RED)
 
 
-get_arch = lambda: {"x86_64": "amd64","aarch64": "arm64","arm64": "arm64","amd64": "amd64"}.get(machine := platform.machine().lower()) or (_ for _ in ()).throw(RuntimeError(f"Unsupported architecture: {machine}"))
+get_arch = lambda: {"x86_64": "amd64", "aarch64": "arm64", "arm64": "arm64", "amd64": "amd64", "i686": "x86", "x86": "x86"}.get(platform.machine().lower(), (_ for _ in ()).throw(RuntimeError(f"Unsupported architecture: {platform.machine()}")))
 
 
 sys_info = get_system_info()
