@@ -5,7 +5,8 @@ if [[ "$(uname)" == "Linux" ]]; then
     echo "Running on Linux"
 
     echo "🧰 Installing Clang and build tools..."
-    yum install -y clang patchelf
+    yum install -y clang
+    pip install patchelf
 
     # tell clang to use libc++ (both compile-time and link-time)
     export CXXFLAGS="-stdlib=libc++"
