@@ -75,7 +75,7 @@ jobs:
         env:
           MACOSX_DEPLOYMENT_TARGET: 14.0
           CIBW_ARCHS_LINUX: native
-          CIBW_SKIP: musllinux*
+          CIBW_SKIP: cp39-musllinux_x86_64 cp39-musllinux_i686 cp39-musllinux_aarch64 cp310-musllinux_x86_64 cp310-musllinux_i686 cp310-musllinux_aarch64 cp311-musllinux_x86_64 cp311-musllinux_i686 cp311-musllinux_aarch64
           CIBW_MANYLINUX_X86_64_IMAGE: quay.io/pypa/manylinux_2_34_x86_64:latest
           CIBW_MANYLINUX_AARCH64_IMAGE: quay.io/pypa/manylinux_2_34_aarch64:latest
         run: |
