@@ -6,7 +6,6 @@ if [[ "$(uname)" == "Linux" ]]; then
 
     echo "🧰 Installing Clang and build tools..."
     yum install -y clang
-    pip install patchelf
 
     # tell clang to use libc++ (both compile-time and link-time)
     export CXXFLAGS="-stdlib=libc++"
@@ -15,7 +14,7 @@ if [[ "$(uname)" == "Linux" ]]; then
     clang++ --version
 
     echo "⬆️  Updating pip, setuptools, and wheel..."
-    python -m pip install --upgrade pip setuptools wheel
+    python -m pip install --upgrade pip setuptools wheel patchelf
 
     echo "📦 Installing build dependencies..."
     pip install -r requirements.txt
