@@ -25,3 +25,9 @@ jobs:
     uses: ./.github/workflows/build.yml
     secrets: inherit
     permissions: write-all
+
+  release:
+    needs: build
+    uses: ./.github/workflows/release.yml
+    secrets: inherit
+    permissions: write-all
