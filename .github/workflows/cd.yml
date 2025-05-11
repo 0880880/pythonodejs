@@ -1,0 +1,27 @@
+name:  Continuous Deployment (CD)
+
+on:
+  push:
+    branches:
+      - master
+      - dev
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+
+  build:
+    name: Build Project
+    uses: ./.github/workflows/build.yml
+    secrets: inherit
+    permissions: write-all
+
+  release:
+    needs: build
+    name: Release Project
+    uses: ./.github/workflows/release.yml
+    secrets: inherit
+    permissions: write-all
