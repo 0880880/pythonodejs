@@ -30,7 +30,7 @@ jobs:
           python-version: ${{ matrix.py }}
 
       - name: Install SConstruct
-        run: pip install scons
+        run: pip install scons twine
 
       - name: Update setuptools, pip, and wheel
         run: python -m pip install --upgrade pip setuptools wheel
@@ -102,3 +102,9 @@ jobs:
         with:
           name: pythonode-${{ matrix.os }}-${{ matrix.versions }}
           path: wheelhouse/
+
+      - name: Publish to PyPI
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        run: twine upload wheelhouse/*
