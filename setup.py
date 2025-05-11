@@ -32,7 +32,13 @@ setup(
             *external_files,
             *[
                 f"lib/{f}" for f in os.listdir("pythonodejs/lib")
-                if not (f.endswith(".exp") or f.endswith(".pdb") or f.endswith(".ilk"))
+                if not (
+                    f.endswith(".exp") or
+                    f.endswith(".pdb") or
+                    f.endswith(".ilk") or
+                    f.endswith(".131.so") or
+                    f.endswith(".131.dylib")
+                )
             ]
         ]
     },
