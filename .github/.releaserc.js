@@ -5,7 +5,7 @@ const templatePath = path.join(__dirname, ".github", "release-template.md");
 
 module.exports = {
   branches: [
-    "master",
+    "main",
     { name: "beta", prerelease: "beta" },
     { name: "dev", prerelease: "dev" },
     { name: "alpha", prerelease: "alpha" }
