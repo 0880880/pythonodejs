@@ -1,4 +1,12 @@
-include pythonodejs/lib/* 
-exclude pythonodejs/*.pdb
-exclude pythonodejs/*.exp
-exclude pythonodejs/*.ilk
+include pythonodejs/lib/*.lib
+include pythonodejs/lib/*.dll
+include pythonodejs/lib/*.so
+include pythonodejs/lib/*.dylib
+include pythonodejs/lib/*.a
+include pythonodejs/lib/*.o
+include pythonodejs/lib/*.sl
+include pythonodejs/lib/*.bundle
+
+exclude pythonodejs/lib/*.pdb
+exclude pythonodejs/lib/*.exp
+exclude pythonodejs/lib/*.ilk
