@@ -1,4 +1,4 @@
 include pythonodejs/lib/* 
-exclude *.pdb
-exclude *.exp
-exclude *.ilk
+exclude pythonodejs/*.pdb
+exclude pythonodejs/*.exp
+exclude pythonodejs/*.ilk
