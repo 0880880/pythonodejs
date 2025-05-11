@@ -26,7 +26,15 @@ setup(
     packages=find_packages(),
     ext_modules=[ext],
     include_package_data=True,
-    package_data={"pythonodejs": ["lib/*", *external_files]},
+    package_data = {
+        "pythonodejs": [
+            *external_files,
+            *[
+                f"lib/{f}" for f in os.listdir("pythonodejs/lib")
+                if not (f.endswith(".exp") or f.endswith(".pdb") or f.endswith(".ilk"))
+            ]
+        ]
+    },
     zip_safe=False,
     cmdclass={"bdist_wheel": bdist_wheel},
 )
