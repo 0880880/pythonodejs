@@ -31,7 +31,8 @@ jobs:
           VERSION_SPACES=$(npx semantic-release --dry-run | grep -oP 'Published release \K.*? ')
           VERSION="${VERSION_SPACES// /}"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   build:
     needs: version
     name: Build shared libraries
