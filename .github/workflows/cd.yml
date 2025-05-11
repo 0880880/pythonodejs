@@ -3,7 +3,7 @@ name:  Continuous Deployment (CD)
 on:
   push:
     branches:
-      - master
+      - main
       - dev
   workflow_dispatch:
 
