@@ -122,8 +122,8 @@ jobs:
             cp311-win_arm64
           CIBW_MANYLINUX_X86_64_IMAGE: quay.io/pypa/manylinux_2_34_x86_64:latest
           CIBW_MANYLINUX_AARCH64_IMAGE: quay.io/pypa/manylinux_2_34_aarch64:latest
+          VERSION=: ${{ needs.version.outputs.version }}
         run: |
-          VERSION="${{ needs.version.outputs.version }}"
           python3 -c "import re; open('pyproject.toml','w').write(re.sub(r'version\\s*=\\s*\\\".*?\\\"', f'version = \\\"{VERSION}\\\"', open('pyproject.toml').read()))"
           pip install cibuildwheel
           cibuildwheel
