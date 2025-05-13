@@ -18,21 +18,6 @@ jobs:
 
       - name: Checkout repo
         uses: actions/checkout@v4
-
-      - name: Install semantic-release dependencies
-        run: |
-          npm i --save-dev conventional-changelog-conventionalcommits
-          npm install --save-dev semantic-release @semantic-release/changelog @semantic-release/git @semantic-release/github @semantic-release/exec @semantic-release/gitlab @semantic-release/npm @semantic-release/release-notes-generator
-
-      - name: Run semantic-release (Update Version)
-        id: version-output
-        run: |
-          cp ./.github/.releaserc.js .
-          VERSION_SPACES=$(npx semantic-release --dry-run | grep -oP 'Published release \K.*? ')
-          VERSION="${VERSION_SPACES// /}"
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   build:
     needs: version
     name: Build shared libraries

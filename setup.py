@@ -23,7 +23,7 @@ ext = Extension(
 
 setup(
     name="pythonodejs",
-    version="0.1.3",
+    version="1.0.1",
     packages=find_packages(),
     ext_modules=[ext],
     include_package_data=True,
