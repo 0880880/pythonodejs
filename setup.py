@@ -35,8 +35,7 @@ setup(
                 if not (
                     f.endswith(".exp") or
                     f.endswith(".pdb") or
-                    f.endswith(".ilk") or
-                    ".131" in f
+                    f.endswith(".ilk")
                 )
             ]
         ]

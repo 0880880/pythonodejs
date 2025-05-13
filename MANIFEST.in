@@ -10,3 +10,6 @@ include pythonodejs/lib/*.bundle
 exclude pythonodejs/lib/*.pdb
 exclude pythonodejs/lib/*.exp
 exclude pythonodejs/lib/*.ilk
+exclude pythonodejs/lib/*.131.dylib
+exclude pythonodejs/lib/*.131.so
+exclude pythonodejs/lib/*.so.131
