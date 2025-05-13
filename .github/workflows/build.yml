@@ -88,10 +88,6 @@ jobs:
         shell: bash
         run: mv pythonodejs/externals/libnode/* pythonodejs/lib/
 
-      - name: Tree
-        if: runner.os != 'Windows'
-        run: python tree.py . --max-files 20000 --ignore .git v8 node
-
       - name: Add rpath (macOS)
         if: runner.os == 'macOS'
         run: install_name_tool -add_rpath pythonodejs/lib/ pythonodejs/lib/pythonodejs.dylib
@@ -101,6 +97,7 @@ jobs:
         run: python setup.py check
       
       - name: Build wheels
+        shell: bash
         env:
           MACOSX_DEPLOYMENT_TARGET: 14.0
           CIBW_ARCHS_LINUX: native
