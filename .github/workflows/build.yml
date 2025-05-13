@@ -113,7 +113,7 @@ jobs:
           CIBW_MANYLINUX_AARCH64_IMAGE: quay.io/pypa/manylinux_2_34_aarch64:latest
         run: |
           export VERSION=${{ needs.version.outputs.version }}
-          python -c "import os,re;f='pyproject.toml';v=os.getenv('MY_PACKAGE_VERSION');t=open(f).read();open(f,'w').write(re.sub(r'(\[project\][\s\S]*?version\s*=\s*)\"[^\"]*\"', fr'\1\"{v}\"', t, flags=re.M))"
+          python -c "import os,re;f='pyproject.toml';v=os.getenv('VERSION');t=open(f).read();open(f,'w').write(re.sub(r'(\[project\][\s\S]*?version\s*=\s*)\"[^\"]*\"', fr'\1\"{v}\"', t, flags=re.M))"
           pip install cibuildwheel
           cibuildwheel
 
