@@ -14,11 +14,11 @@ def _get_lib_path():
     #arch = get_arch()
 
     if system == 'windows':
-        lib_name = f'pythonode.dll'
+        lib_name = f'pythonodejs.dll'
     elif system == 'linux':
-        lib_name = f'pythonode.so'
+        lib_name = f'pythonodejs.so'
     elif system == 'darwin':  # macOS
-        lib_name = f'pythonode.dylib'
+        lib_name = f'pythonodejs.dylib'
     else:
         raise RuntimeError(f"Unsupported platform: {system}")
 
