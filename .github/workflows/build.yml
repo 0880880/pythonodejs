@@ -97,8 +97,6 @@ jobs:
           CIBW_MANYLINUX_X86_64_IMAGE: quay.io/pypa/manylinux_2_34_x86_64:latest
           CIBW_MANYLINUX_AARCH64_IMAGE: quay.io/pypa/manylinux_2_34_aarch64:latest
         run: |
-          export VERSION=${{ needs.version.outputs.version }}
-          python -c "import os,re;f='pyproject.toml';v=os.getenv('VERSION')[1:];t=open(f).read();open(f,'w').write(re.sub(r'(\[project\][\s\S]*?version\s*=\s*)\"[^\"]*\"', fr'\1\"{v}\"', t, flags=re.M))"
           pip install cibuildwheel
           cibuildwheel
 
