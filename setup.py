@@ -36,8 +36,7 @@ setup(
                     f.endswith(".exp") or
                     f.endswith(".pdb") or
                     f.endswith(".ilk") or
-                    f.endswith(".131.so") or
-                    f.endswith(".131.dylib")
+                    ".131" in f
                 )
             ]
         ]
