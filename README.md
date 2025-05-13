@@ -28,7 +28,7 @@ print(readFile("hello.txt"))
 
 ...
 
-# pythonode automatically calls dispose.
+# pythonodejs automatically calls dispose.
 ```
 
 ## Building
