@@ -39,7 +39,7 @@ NodeContext* NodeContext_Create() {
 }
 
 void NodeContext_Destroy(NodeContext* context) {
-  delete context;
+  //delete context;
 }
 
 int NodeContext_Setup(NodeContext* context, int argc, char** argv) {
@@ -311,6 +311,5 @@ int main(int argc, char** argv) {
     std::cout << n.val_string << std::endl;
 
     NodeContext_Dispose(context);
-    NodeContext_Destroy(context);
     return 0;
 }

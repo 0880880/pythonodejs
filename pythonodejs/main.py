@@ -196,7 +196,6 @@ class Node:
     def dispose(self):
         self.cleaned = True
         self.stop()
-        _lib.NodeContext_Destroy(self.__context__)
         _lib.NodeContext_Dispose(self.__context__)
 
     def __del__(self):
