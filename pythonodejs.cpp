@@ -81,11 +81,10 @@ NodeValue to_node_value(NodeContext* context, v8::Local<Context> local_ctx, v8::
         return {.type=BIGINT, .val_big=*utf8};
     } else if (value->IsFunction()) {
         v8::Local<v8::Function> func = value.As<v8::Function>();
-        v8::Global<v8::Function> global_func(context->isolate, func);
         v8::String::Utf8Value utf8(context->isolate, func->GetName());
-        auto f = std::make_unique<Func>();
-        f->function = std::move(global_func);
-        return {.type=FUNCTION, .function_name=strdup(*utf8), .function=f.release()};
+        Func* f = new Func();
+		    f->function.Reset(context->isolate, func);
+        return {.type=FUNCTION, .function_name=strdup(*utf8), .function=f};
     } else if (value->IsArray()) {
         v8::Local<v8::Array> array = value.As<v8::Array>();
         int length = array->Length();
@@ -159,13 +158,19 @@ v8::Local<v8::Value> to_v8_value(NodeContext* context, v8::Local<Context> local_
     } else if (value.type == ARRAY) {
 		v8::Local<v8::Array> array = v8::Array::New(context->isolate, value.val_array_len);
         for (int i = 0; i < value.val_array_len; i++) {
-        	array->Set(local_ctx, i, to_v8_value(context, local_ctx, value.val_array[i]));
+        	v8::Maybe<bool> maybe_result = array->Set(local_ctx, i, to_v8_value(context, local_ctx, value.val_array[i]));
+          if (maybe_result.IsNothing()) {
+            std::cerr << "PYTHONODEJS: Failed to set array." << std::endl;
+          }
         }
     	return array;
     } else if (value.type == OBJECT) {
         v8::Local<v8::Object> object = v8::Object::New(context->isolate);
         for (int i = 0; i < value.object_len; i++) {
-        	object->Set(local_ctx, v8::String::NewFromUtf8(context->isolate, value.object_keys[i]).ToLocalChecked(), to_v8_value(context, local_ctx, value.object_values[i]));
+        	v8::Maybe<bool> maybe_result = object->Set(local_ctx, v8::String::NewFromUtf8(context->isolate, value.object_keys[i]).ToLocalChecked(), to_v8_value(context, local_ctx, value.object_values[i]));
+          if (maybe_result.IsNothing()) {
+            std::cerr << "PYTHONODEJS: Failed to set object." << std::endl;
+          }
         }
     	return object;
     }
