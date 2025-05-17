@@ -90,19 +90,7 @@ NodeValue to_node_value(NodeContext* context, v8::Local<Context> local_ctx, v8::
         int length = array->Length();
         NodeValue* arr = (NodeValue*)malloc(length * sizeof(NodeValue));
         for (int i = 0; i < length; i++) {
-            NodeValue v = to_node_value(context, local_ctx, array->Get(local_ctx, i).ToLocalChecked());
-            arr[i].type = v.type;
-            arr[i].val_bool = v.val_bool;
-            arr[i].val_num = v.val_num;
-            arr[i].val_string = v.val_string;
-            arr[i].val_symbol = v.val_symbol;
-            arr[i].function_name = v.function_name;
-            arr[i].val_array = v.val_array;
-            arr[i].val_array_len = v.val_array_len;
-            arr[i].val_big = v.val_big;
-            arr[i].object_keys = v.object_keys;
-            arr[i].object_values = v.object_values;
-            arr[i].object_len = v.object_len;
+            arr[i] = to_node_value(context, local_ctx, array->Get(local_ctx, i).ToLocalChecked());
         }
     	return {.type=ARRAY, .val_array=arr, .val_array_len=length};
     } else if (value->IsObject()) {
@@ -119,19 +107,7 @@ NodeValue to_node_value(NodeContext* context, v8::Local<Context> local_ctx, v8::
             strcpy(key_arr[i], strdup(*utf8));
             v8::Local<v8::Value> value;
 			if (obj->Get(local_ctx, key).ToLocal(&value)) {
-                NodeValue v = to_node_value(context, local_ctx, value);
-                objects[i].type = v.type;
-                objects[i].val_bool = v.val_bool;
-                objects[i].val_num = v.val_num;
-                objects[i].val_string = v.val_string;
-                objects[i].val_symbol = v.val_symbol;
-                objects[i].function_name = v.function_name;
-                objects[i].val_array = v.val_array;
-                objects[i].val_array_len = v.val_array_len;
-                objects[i].val_big = v.val_big;
-                objects[i].object_keys = v.object_keys;
-                objects[i].object_values = v.object_values;
-                objects[i].object_len = v.object_len;
+                objects[i] = to_node_value(context, local_ctx, value);
 			}
 		}
     	return {.type=OBJECT, .object_keys=key_arr, .object_values=objects, .object_len=length};
