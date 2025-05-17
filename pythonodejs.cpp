@@ -64,7 +64,7 @@ int NodeContext_Setup(NodeContext* context, int argc, char** argv) {
 }
 
 
-NodeValue to_node_value(NodeContext* context, v8::Local<Context> local_ctx, v8::Local<v8::Value> value) {
+NodeValue to_node_value(NodeContext* context, v8::Local<Context> local_ctx, v8::Local<Value> value) {
     if (value->IsUndefined()) {
     	return {.type=UNDEFINED};
     } else if (value->IsNull()) {
@@ -75,7 +75,7 @@ NodeValue to_node_value(NodeContext* context, v8::Local<Context> local_ctx, v8::
     	return {.type=BOOLEAN_T, .val_bool=value.As<v8::Boolean>()->Value()};
     } else if (value->IsString()) {
         v8::String::Utf8Value utf8(context->isolate, value.As<v8::String>());
-        return {.type=STRING, .val_string=*utf8};
+        return {.type=STRING, .val_string=strdup(*utf8)};
     } else if (value->IsBigInt()) {
         v8::String::Utf8Value utf8(context->isolate, value.As<v8::BigInt>()->ToString(local_ctx).ToLocalChecked());
         return {.type=BIGINT, .val_big=*utf8};
@@ -85,7 +85,7 @@ NodeValue to_node_value(NodeContext* context, v8::Local<Context> local_ctx, v8::
         v8::String::Utf8Value utf8(context->isolate, func->GetName());
         auto f = std::make_unique<Func>();
         f->function = std::move(global_func);
-        return {.type=FUNCTION, .function_name=*utf8, .function=f.release()};
+        return {.type=FUNCTION, .function_name=strdup(*utf8), .function=f.release()};
     } else if (value->IsArray()) {
         v8::Local<v8::Array> array = value.As<v8::Array>();
         int length = array->Length();
@@ -117,7 +117,7 @@ NodeValue to_node_value(NodeContext* context, v8::Local<Context> local_ctx, v8::
             v8::String::Utf8Value utf8(context->isolate, key);
             size_t len = strlen(*utf8);
             key_arr[i] = (char*)malloc(len + 1);  // +1 for null terminator
-            strcpy(key_arr[i], *utf8);
+            strcpy(key_arr[i], strdup(*utf8));
             v8::Local<v8::Value> value;
 			if (obj->Get(local_ctx, key).ToLocal(&value)) {
                 NodeValue v = to_node_value(context, local_ctx, value);

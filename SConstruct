@@ -67,7 +67,7 @@ CXXFLAGS = ['-std=c++20']
 if not OS == 'windows':
     CXXFLAGS.append('-fPIC')
 INCLUDES = ['./pythonodejs/externals/node', './pythonodejs/externals/v8/include', './pythonodejs/externals/uv/include']
-LDFLAGS = [f'-L{lib_dir.resolve()}', '-lnode', '-shared']
+LDFLAGS = [f'-L{lib_dir.resolve()}', '-lnode', '-shared', '-Wl,-rpath,./lib']
 
 EXT = "so"
 
