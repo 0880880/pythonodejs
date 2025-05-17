@@ -27,6 +27,7 @@ setup(
     packages=find_packages(),
     ext_modules=[ext],
     include_package_data=True,
+    python_requires='>=3.9,<=3.11',
     package_data = {
         "pythonodejs": [
             *external_files,
