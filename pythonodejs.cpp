@@ -34,6 +34,10 @@ struct Func {
   v8::Global<v8::Function> function;
 };
 
+struct Val {
+  v8::Global<v8::Value> value;
+};
+
 NodeContext* NodeContext_Create() {
   return new NodeContext();
 }
@@ -89,28 +93,36 @@ NodeValue to_node_value(NodeContext* context, v8::Local<Context> local_ctx, v8::
         v8::Local<v8::Array> array = value.As<v8::Array>();
         int length = array->Length();
         NodeValue* arr = (NodeValue*)malloc(length * sizeof(NodeValue));
+        NodeValue nv = {.type=ARRAY, .val_array=arr, .val_array_len=length};
         for (int i = 0; i < length; i++) {
             arr[i] = to_node_value(context, local_ctx, array->Get(local_ctx, i).ToLocalChecked());
+            Val* parent = new Val();
+            parent->value.Reset(context->isolate, value);
+            arr[i].parent = parent;
         }
-    	return {.type=ARRAY, .val_array=arr, .val_array_len=length};
+    	return nv;
     } else if (value->IsObject()) {
         v8::Local<v8::Object> obj = value.As<v8::Object>();
 		v8::Local<v8::Array> keys = obj->GetOwnPropertyNames(local_ctx).ToLocalChecked();
         int length = keys->Length();
         char** key_arr = (char**)malloc(length * sizeof(char*));
         NodeValue* objects = (NodeValue*)malloc(length * sizeof(NodeValue));
+        NodeValue nv = {.type=OBJECT, .object_keys=key_arr, .object_values=objects, .object_len=length};
         for (uint32_t i = 0; i < length; ++i) {
             v8::Local<v8::Value> key = keys->Get(local_ctx, i).ToLocalChecked();
             v8::String::Utf8Value utf8(context->isolate, key);
             size_t len = strlen(*utf8);
             key_arr[i] = (char*)malloc(len + 1);  // +1 for null terminator
             strcpy(key_arr[i], strdup(*utf8));
-            v8::Local<v8::Value> value;
-			if (obj->Get(local_ctx, key).ToLocal(&value)) {
-                objects[i] = to_node_value(context, local_ctx, value);
+            v8::Local<v8::Value> oval;
+			if (obj->Get(local_ctx, key).ToLocal(&oval)) {
+                objects[i] = to_node_value(context, local_ctx, oval);
+				Val* parent = new Val();
+				parent->value.Reset(context->isolate, value);
+                objects[i].parent = parent;
 			}
 		}
-    	return {.type=OBJECT, .object_keys=key_arr, .object_values=objects, .object_len=length};
+    	return nv;
     }
     return {};
 }
@@ -246,10 +258,15 @@ NodeValue NodeContext_Call_Function(NodeContext* context, NodeValue function, No
     Context::Scope context_scope(local_ctx);
     v8::Local<v8::Function> func = function.function->function.Get(context->isolate);
 
+    v8::Local<Value> recv = local_ctx->Global();
+    if (function.parent != nullptr) {
+        recv = function.parent->value.Get(context->isolate);
+    }
+
   	v8::Local<v8::Value> result = func->Call(
 		context->isolate,
     	local_ctx,
-    	local_ctx->Global(),
+    	recv,
         args_length,
         args_vec.data()
     ).ToLocalChecked();

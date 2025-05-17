@@ -154,7 +154,7 @@ print(result)
 ## ✅ ToDo
 
 * [x] Stable release
-* [ ] Fix function context
+* [x] Fix function context
 * [ ] ES Module loading
 * [ ] BIGINT support
 * [ ] Async/await bridging between Python ↔ JS
