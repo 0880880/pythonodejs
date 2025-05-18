@@ -197,12 +197,12 @@ def _to_python(node, value: NodeValue): # TODO SYMBOL
     return None
 
 class Node:
-    def __init__(self, thread_pool_size=1):
+    def __init__(self, path=__file__, thread_pool_size=1):
         self.cleaned = False
         self._context = _lib.NodeContext_Create()
 
         argc = 1
-        argv = (ctypes.c_char_p * argc)(__file__.encode("utf-8"))
+        argv = (ctypes.c_char_p * argc)(path.encode("utf-8"))
 
         error = _lib.NodeContext_Setup(self._context, 1, argv)
         if not error == 0:
