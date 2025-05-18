@@ -19,8 +19,12 @@ extern "C" {
 
     typedef struct NodeContext NodeContext;
     typedef struct Func Func;
+    typedef struct Val Val;
 
-    typedef enum { UNDEFINED, NULL_T, BOOLEAN_T, NUMBER, STRING, SYMBOL, FUNCTION, ARRAY, BIGINT, OBJECT, UNKNOWN } NodeValueType;
+    typedef enum NodeValueType : int {  // explicitly 4 bytes
+      UNDEFINED, NULL_T, BOOLEAN_T, NUMBER, STRING,
+      SYMBOL, FUNCTION, ARRAY, BIGINT, OBJECT, UNKNOWN
+    } NodeValueType;
 
     typedef struct NodeValue {
         NodeValueType type;
@@ -29,13 +33,14 @@ extern "C" {
         char* val_string;
         char* val_symbol;
         char* function_name;
-        Func* function;
+        struct Func* function;
         struct NodeValue* val_array;
         int val_array_len;
         char* val_big;
         char** object_keys;
         struct NodeValue* object_values;
         int object_len;
+        void* parent;
     } NodeValue;
 
     EXPORT NodeContext* NodeContext_Create();

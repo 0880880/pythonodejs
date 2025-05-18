@@ -82,13 +82,17 @@ NodeValue to_node_value(NodeContext* context, v8::Local<Context> local_ctx, v8::
         return {.type=STRING, .val_string=strdup(*utf8)};
     } else if (value->IsBigInt()) {
         v8::String::Utf8Value utf8(context->isolate, value.As<v8::BigInt>()->ToString(local_ctx).ToLocalChecked());
-        return {.type=BIGINT, .val_big=*utf8};
+        return {.type=BIGINT, .val_big=strdup(*utf8)};
     } else if (value->IsFunction()) {
+        NodeValue ret = {};
         v8::Local<v8::Function> func = value.As<v8::Function>();
         v8::String::Utf8Value utf8(context->isolate, func->GetName());
         Func* f = new Func();
 		    f->function.Reset(context->isolate, func);
-        return {.type=FUNCTION, .function_name=strdup(*utf8), .function=f};
+        ret.type = FUNCTION;
+        ret.function_name = strdup(*utf8);
+        ret.function = f;
+        return ret;
     } else if (value->IsArray()) {
         v8::Local<v8::Array> array = value.As<v8::Array>();
         int length = array->Length();
@@ -103,7 +107,7 @@ NodeValue to_node_value(NodeContext* context, v8::Local<Context> local_ctx, v8::
     	return nv;
     } else if (value->IsObject()) {
         v8::Local<v8::Object> obj = value.As<v8::Object>();
-		v8::Local<v8::Array> keys = obj->GetOwnPropertyNames(local_ctx).ToLocalChecked();
+		    v8::Local<v8::Array> keys = obj->GetOwnPropertyNames(local_ctx).ToLocalChecked();
         int length = keys->Length();
         char** key_arr = (char**)malloc(length * sizeof(char*));
         NodeValue* objects = (NodeValue*)malloc(length * sizeof(NodeValue));
@@ -115,13 +119,13 @@ NodeValue to_node_value(NodeContext* context, v8::Local<Context> local_ctx, v8::
             key_arr[i] = (char*)malloc(len + 1);  // +1 for null terminator
             strcpy(key_arr[i], strdup(*utf8));
             v8::Local<v8::Value> oval;
-			if (obj->Get(local_ctx, key).ToLocal(&oval)) {
+			      if (obj->Get(local_ctx, key).ToLocal(&oval)) {
                 objects[i] = to_node_value(context, local_ctx, oval);
-				Val* parent = new Val();
-				parent->value.Reset(context->isolate, value);
+				        Val* parent = new Val();
+				        parent->value.Reset(context->isolate, value);
                 objects[i].parent = parent;
-			}
-		}
+			      }
+		    }
     	return nv;
     }
     return {};
@@ -260,7 +264,7 @@ NodeValue NodeContext_Call_Function(NodeContext* context, NodeValue function, No
 
     v8::Local<Value> recv = local_ctx->Global();
     if (function.parent != nullptr) {
-        recv = function.parent->value.Get(context->isolate);
+        recv = ((Val*) function.parent)->value.Get(context->isolate);
     }
 
   	v8::Local<v8::Value> result = func->Call(
@@ -287,9 +291,40 @@ void NodeContext_Dispose(NodeContext* context) {
 }
 
 void Node_Dispose_Value(NodeValue value) {
-  if (value.function != nullptr) {
-		value.function->function.Reset();
-  }
+    if (value.function != nullptr) {
+        value.function->function.Reset();
+        free(value.function_name);
+        delete value.function;
+    }
+    if (value.val_big != nullptr) {
+        free(value.val_big);
+    }
+    if (value.val_string != nullptr) {
+        free(value.val_string);
+    }
+    if (value.parent != nullptr) {
+        //((Val*) value.parent)->value.Reset();
+        //delete ((Val*) value.parent);
+    }
+    if (value.val_array != nullptr) {
+        free(value.val_array);
+        value.val_array = nullptr;
+    }
+    if (value.object_keys != nullptr) {
+        for (uint32_t i = 0; i < value.object_len; ++i) {
+            if (value.object_keys[i] != nullptr) {
+                free(value.object_keys[i]);
+            }
+        }
+        free(value.object_keys);
+        value.object_keys = nullptr;
+    }
+    /*
+    if (value.object_values != nullptr) {
+        free(value.object_values);
+        value.object_values = nullptr;
+    }
+    */
 }
 
 

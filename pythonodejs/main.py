@@ -1,7 +1,9 @@
 from typing import Union
 from pathlib import Path
 import platform
+import weakref
 import ctypes
+import types
 import os
 
 #get_arch = lambda: {"x86_64": "amd64","aarch64": "arm64","arm64": "arm64","amd64": "amd64"}.get(machine := platform.machine().lower()) or (_ for _ in ()).throw(RuntimeError(f"Unsupported architecture: {machine}"))
@@ -46,6 +48,7 @@ NodeValue._fields_ = [
     ("object_keys", ctypes.POINTER(ctypes.c_char_p)),
     ("object_values", ctypes.POINTER(NodeValue)),
     ("object_len", ctypes.c_int),
+    ("parent", ctypes.c_void_p),
 ]
 
 # Set function signatures
@@ -89,21 +92,41 @@ BIGINT = 8
 OBJECT = 9
 UNKOWN = 10
 
+class NativeArray(list):
+    def __init__(self, node, iterable=()):
+        super().__init__(iterable)
+        self._node = node
+
+    def __del__(self):
+        _lib.Node_Dispose_Value(self._node)
+
+class NativeObject(dict):
+    def __init__(self, *args, node=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._node = node
+
+    def __del__(self):
+        _lib.Node_Dispose_Value(self._node)
+
+
 class Func:
     def __init__(self, name, node, f):
         self.name = name
-        self.__node__ = node
-        self.__f__ = f
+        self._node = node
+        self._f = f
 
     def __call__(self, *args, **kwargs):
         L = len(args)
         n_args = (NodeValue * L)()
         for i in range(L):
-            n_args[i] = _to_node(self.__node__, args[i])
-        return _to_python(self.__node__, _lib.NodeContext_Call_Function(self.__node__.__context__, self.__f__, n_args, len(args)))
+            n_args[i] = _to_node(self._node, args[i])
+        return _to_python(self._node, _lib.NodeContext_Call_Function(self._node._context, self._f, n_args, len(args)))
 
     def __str__(self):
         return f"{self.name}@Node"
+        
+    def __del__(self):
+        _lib.Node_Dispose_Value(self._f)
 
 def _to_node(node, value): # TODO SYMBOL
     v = NodeValue()
@@ -112,7 +135,7 @@ def _to_node(node, value): # TODO SYMBOL
     elif isinstance(value, bool):
         v.type = BOOLEAN_T
         v.val_bool = 1 if value else 0
-    elif isinstance(value, (int, bool)):
+    elif isinstance(value, int):
         v.type = NUMBER
         v.val_num = value
     elif isinstance(value, str):
@@ -150,19 +173,23 @@ def _to_python(node, value: NodeValue): # TODO SYMBOL
     elif value.type == NUMBER:
         return value.val_num
     elif value.type == STRING:
-        return value.val_string.decode("utf-8")
+        s = value.val_string.decode("utf-8")
+        _lib.Node_Dispose_Value(value)
+        return s
     elif value.type == FUNCTION:
         return Func(value.function_name, node, value)
     elif value.type == ARRAY:
-        arr = []
+        arr = NativeArray(value)
         L = value.val_array_len
         for i in range(L):
             arr.append(_to_python(node, value.val_array[i]))
         return arr
     elif value.type == BIGINT:
-        return int(value.val_big.decode("utf-8"))
+        i = int(value.val_big.decode("utf-8"))
+        _lib.Node_Dispose_Value(value)
+        return i
     elif value.type == OBJECT:
-        obj = {}
+        obj = NativeObject(node=value)
         L = value.object_len
         for i in range(L):
             obj[value.object_keys[i].decode("utf-8")] = _to_python(node, value.object_values[i])
@@ -172,31 +199,40 @@ def _to_python(node, value: NodeValue): # TODO SYMBOL
 class Node:
     def __init__(self, thread_pool_size=1):
         self.cleaned = False
-        self.__context__ = _lib.NodeContext_Create()
+        self._context = _lib.NodeContext_Create()
 
         argc = 1
         argv = (ctypes.c_char_p * argc)(__file__.encode("utf-8"))
 
-        error = _lib.NodeContext_Setup(self.__context__, 1, argv)
+        error = _lib.NodeContext_Setup(self._context, 1, argv)
         if not error == 0:
             raise Exception("Failed to setup node.")
-        error = _lib.NodeContext_Init(self.__context__, thread_pool_size)
+        error = _lib.NodeContext_Init(self._context, thread_pool_size)
         if not error == 0:
             raise Exception("Failed to init node.")
+        
+    def require(self, module: str):
+        js_mod = self.eval(f"(() => {{ try {{ return require('{module}'); }} catch {{}} }})()")
+        if not js_mod:
+            raise Exception(f"Failed to import module {module}")
+        mod = types.ModuleType(module)
+        for key in js_mod:
+            setattr(mod, key, js_mod[key])
+        return mod
 
     def eval(self, code: str):
-        return _to_python(self, _lib.NodeContext_Run_Script(self.__context__, code.encode("utf-8")))
+        return _to_python(self, _lib.NodeContext_Run_Script(self._context, code.encode("utf-8")))
 
     def run(self, fp: Union[str, Path]):
         eval(Path(fp).read_text("utf-8"))
 
     def stop(self):
-        _lib.NodeContext_Stop(self.__context__)
+        _lib.NodeContext_Stop(self._context)
 
     def dispose(self):
         self.cleaned = True
         self.stop()
-        _lib.NodeContext_Dispose(self.__context__)
+        _lib.NodeContext_Dispose(self._context)
 
     def __del__(self):
         self.stop()
