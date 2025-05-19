@@ -43,12 +43,19 @@ extern "C" {
         void* parent;
     } NodeValue;
 
+    typedef void* (*Callback)(const char *function_name, const NodeValue *values, int length);
+
     EXPORT NodeContext* NodeContext_Create();
     EXPORT int NodeContext_Setup(NodeContext* context, int argc, char** argv);
     EXPORT int NodeContext_Init(NodeContext* context, int thread_pool_size);
 
+    EXPORT void NodeContext_SetCallback(NodeContext* context, Callback cb);
+    EXPORT void NodeContext_Define_Global(NodeContext* context, const char** keys, NodeValue* values, int length);
+
     EXPORT NodeValue NodeContext_Run_Script(NodeContext* context, const char* code);
+    EXPORT NodeValue NodeContext_Create_Function(NodeContext* context, const char* function_name);
     EXPORT NodeValue NodeContext_Call_Function(NodeContext* context, NodeValue function, NodeValue* args, size_t args_length);
+    EXPORT NodeValue NodeContext_Construct_Function(NodeContext* context, NodeValue function, NodeValue* args, size_t args_length);
 
     EXPORT void NodeContext_Stop(NodeContext* context);
     EXPORT void NodeContext_Destroy(NodeContext* context);

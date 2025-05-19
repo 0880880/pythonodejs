@@ -7,6 +7,7 @@
 
 #include "node.h"
 #include "uv.h"
+#include <Python.h>
 
 using node::CommonEnvironmentSetup;
 using node::Environment;
@@ -28,6 +29,12 @@ struct NodeContext {
   Isolate* isolate;
   v8::Global<Context> global_ctx;
   v8::Global<v8::Function> runInThisContext;
+  Callback py_callback;
+};
+
+struct FuncInfo {
+    const char* name;
+    NodeContext* context;
 };
 
 struct Func {
@@ -65,6 +72,14 @@ int NodeContext_Setup(NodeContext* context, int argc, char** argv) {
   context->exec_args = result->exec_args();
 
   return result->exit_code();
+}
+
+void NodeContext_SetCallback(NodeContext* context, Callback cb) {
+    if (!context) {
+        std::cerr << "C ERROR: NodeContext_SetCallback called with NULL context!" << std::endl;
+        return;
+    }
+    context->py_callback = cb;
 }
 
 
@@ -144,7 +159,8 @@ v8::Local<v8::Value> to_v8_value(NodeContext* context, v8::Local<Context> local_
     } else if (value.type == STRING) {
         return v8::String::NewFromUtf8(context->isolate, value.val_string).ToLocalChecked();
     } else if (value.type == BIGINT) {
-
+        v8::Local<v8::String> str = v8::String::NewFromUtf8(context->isolate, value.val_big).ToLocalChecked();
+        //return v8::BigInt::New(context->isolate, str);
     } else if (value.type == FUNCTION) {
         return (*value.function).function.Get(context->isolate);
     } else if (value.type == ARRAY) {
@@ -249,6 +265,57 @@ NodeValue NodeContext_Run_Script(NodeContext* context, const char* code) {
   return to_node_value(context, local_ctx, result);
 }
 
+void js_function_callback(const v8::FunctionCallbackInfo<v8::Value>& args) {
+
+    v8::Local<v8::External> data = v8::Local<v8::External>::Cast(args.Data());
+    FuncInfo* info = static_cast<FuncInfo*>(data->Value());
+
+    Isolate* isolate = args.GetIsolate();
+
+    HandleScope handle_scope(isolate);
+
+    v8::Local<Context> local_ctx = info->context->global_ctx.Get(isolate);
+
+    void* result = nullptr;
+
+    if (args.Length() == 0) {
+        result = info->context->py_callback(info->name, NULL, 0);
+    } else {
+      NodeValue* arr = (NodeValue*)malloc(args.Length() * sizeof(NodeValue));
+
+      for (int i = 0; i < args.Length(); i++) {
+          v8::Local<v8::Value> arg = args[i];
+          arr[i] = to_node_value(info->context, local_ctx, arg);
+      }
+
+      result = info->context->py_callback(info->name, arr, args.Length());
+    }
+    if (result != nullptr) {
+        args.GetReturnValue().Set(to_v8_value(info->context, local_ctx, *((NodeValue*)result)));
+    }
+}
+
+
+NodeValue NodeContext_Create_Function(NodeContext* context, const char* function_name) {
+
+    Locker locker(context->isolate);
+    Isolate::Scope isolate_scope(context->isolate);
+    HandleScope handle_scope(context->isolate);
+    v8::Local<Context> local_ctx = context->global_ctx.Get(context->isolate);
+
+    FuncInfo* info = new FuncInfo;
+    info->name=function_name;
+    info->context=context;
+    v8::Local<v8::External> external_data = v8::External::New(context->isolate, info);
+
+    v8::Local<v8::FunctionTemplate> tpl = v8::FunctionTemplate::New(context->isolate, js_function_callback, external_data);
+    v8::Local<v8::Function> fn = tpl->GetFunction(local_ctx).ToLocalChecked();
+
+    local_ctx->Global()->Set(local_ctx, v8::String::NewFromUtf8(context->isolate, function_name).ToLocalChecked(), fn).Check();
+
+    return to_node_value(context, local_ctx, fn);
+}
+
 NodeValue NodeContext_Call_Function(NodeContext* context, NodeValue function, NodeValue* args, size_t args_length) {
 
     Locker locker(context->isolate);
@@ -271,6 +338,38 @@ NodeValue NodeContext_Call_Function(NodeContext* context, NodeValue function, No
 		context->isolate,
     	local_ctx,
     	recv,
+        args_length,
+        args_vec.data()
+    ).ToLocalChecked();
+
+    return to_node_value(context, local_ctx, result);
+}
+
+void NodeContext_Define_Global(NodeContext* context, const char** keys, NodeValue* values, int length) {
+
+    Locker locker(context->isolate);
+    Isolate::Scope isolate_scope(context->isolate);
+    HandleScope handle_scope(context->isolate);
+    v8::Local<Context> local_ctx = context->global_ctx.Get(context->isolate);
+    for (int i = 0; i < length; i++) {
+        local_ctx->Global()->Set(local_ctx, v8::String::NewFromUtf8(context->isolate, keys[i]).ToLocalChecked(), to_v8_value(context, local_ctx, values[i])).Check();
+    }
+}
+
+NodeValue NodeContext_Construct_Function(NodeContext* context, NodeValue function, NodeValue* args, size_t args_length) {
+
+    Locker locker(context->isolate);
+    Isolate::Scope isolate_scope(context->isolate);
+    HandleScope handle_scope(context->isolate);
+    v8::Local<Context> local_ctx = context->global_ctx.Get(context->isolate);
+    std::vector<v8::Local<v8::Value>> args_vec = {};
+    for (int i = 0; i < args_length; i++) {
+        args_vec.push_back(to_v8_value(context, local_ctx, args[i]));
+    }
+    v8::Local<v8::Function> func = function.function->function.Get(context->isolate);
+
+  	v8::Local<v8::Value> result = func->NewInstance(
+    	  local_ctx,
         args_length,
         args_vec.data()
     ).ToLocalChecked();

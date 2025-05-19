@@ -5,6 +5,7 @@ import weakref
 import ctypes
 import types
 import os
+import re
 
 #get_arch = lambda: {"x86_64": "amd64","aarch64": "arm64","arm64": "arm64","amd64": "amd64"}.get(machine := platform.machine().lower()) or (_ for _ in ()).throw(RuntimeError(f"Unsupported architecture: {machine}"))
 
@@ -36,7 +37,7 @@ class NodeValue(ctypes.Structure):
 
 NodeValue._fields_ = [
     ("type", ctypes.c_int),
-    ("val_bool", ctypes.c_int),
+    ("val_bool", ctypes.c_bool),
     ("val_num", ctypes.c_double),
     ("val_string", ctypes.c_char_p),
     ("val_symbol", ctypes.c_char_p),
@@ -51,6 +52,8 @@ NodeValue._fields_ = [
     ("parent", ctypes.c_void_p),
 ]
 
+CALLBACK = ctypes.CFUNCTYPE(ctypes.c_void_p, ctypes.c_char_p, ctypes.POINTER(NodeValue), ctypes.c_int)
+
 # Set function signatures
 _lib.NodeContext_Create.restype = ctypes.c_void_p
 _lib.NodeContext_Create.argtypes = []
@@ -61,11 +64,23 @@ _lib.NodeContext_Setup.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.POINTER
 _lib.NodeContext_Init.restype = ctypes.c_int
 _lib.NodeContext_Init.argtypes = [ctypes.c_void_p, ctypes.c_int]
 
+_lib.NodeContext_Define_Global.restype  = None
+_lib.NodeContext_SetCallback.argtypes = [ctypes.c_void_p, CALLBACK]
+
+_lib.NodeContext_Define_Global.restype  = None
+_lib.NodeContext_Define_Global.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.c_char_p), ctypes.POINTER(NodeValue), ctypes.c_int]
+
 _lib.NodeContext_Run_Script.restype = NodeValue
 _lib.NodeContext_Run_Script.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
 
+_lib.NodeContext_Create_Function.restype = NodeValue
+_lib.NodeContext_Create_Function.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
+
 _lib.NodeContext_Call_Function.restype = NodeValue
 _lib.NodeContext_Call_Function.argtypes = [ctypes.c_void_p, NodeValue, ctypes.POINTER(NodeValue), ctypes.c_size_t]
+
+_lib.NodeContext_Construct_Function.restype = NodeValue
+_lib.NodeContext_Construct_Function.argtypes = [ctypes.c_void_p, NodeValue, ctypes.POINTER(NodeValue), ctypes.c_size_t]
 
 _lib.NodeContext_Stop.restype = None
 _lib.NodeContext_Stop.argtypes = [ctypes.c_void_p]
@@ -122,6 +137,13 @@ class Func:
             n_args[i] = _to_node(self._node, args[i])
         return _to_python(self._node, _lib.NodeContext_Call_Function(self._node._context, self._f, n_args, len(args)))
 
+    def new(self, *args, **kwargs):
+        L = len(args)
+        n_args = (NodeValue * L)()
+        for i in range(L):
+            n_args[i] = _to_node(self._node, args[i])
+        return _to_python(self._node, _lib.NodeContext_Construct_Function(self._node._context, self._f, n_args, len(args)))
+
     def __str__(self):
         return f"{self.name}@Node"
         
@@ -162,6 +184,12 @@ def _to_node(node, value): # TODO SYMBOL
         v.object_len = L
         v.object_keys = n_keys
         v.object_values = values
+    elif callable(value):
+        fun = _lib.NodeContext_Create_Function(node._context, value.__name__.encode("utf-8"))
+        v.type = FUNCTION
+        v.function_name = value.__name__.encode("utf-8")
+        v.function = fun.function
+        node._python_funcs[value.__name__] = value
     else:
         v.type = STRING
         v.val_string = value.__str__().encode("utf-8")
@@ -196,13 +224,35 @@ def _to_python(node, value: NodeValue): # TODO SYMBOL
         return obj
     return None
 
+
 class Node:
     def __init__(self, path=__file__, thread_pool_size=1):
         self.cleaned = False
         self._context = _lib.NodeContext_Create()
+        self._python_funcs = {}
 
         argc = 1
         argv = (ctypes.c_char_p * argc)(path.encode("utf-8"))
+
+        
+        def _callback(function_name, values_ptr, length):
+            function_name = re.sub(r'([a-zA-Z_\$][\w\$]*)\s*\(\s*\)\s*;*', r'\1', function_name.decode("utf-8").strip())
+            if function_name in self._python_funcs:
+                args = [None]*length
+                for i in range(length):
+                    args[i] = _to_python(self, values_ptr[i])
+                res = self._python_funcs[function_name](*args)
+                if res:
+                    return _to_node(self, res)
+                return 0
+            else:
+                raise Exception(f"Function not found. {function_name}")
+            
+        self._callback = CALLBACK(_callback)
+        callback_addr_in_python = ctypes.cast(self._callback, ctypes.c_void_p).value
+
+
+        _lib.NodeContext_SetCallback(self._context, self._callback)
 
         error = _lib.NodeContext_Setup(self._context, 1, argv)
         if not error == 0:
@@ -219,6 +269,16 @@ class Node:
         for key in js_mod:
             setattr(mod, key, js_mod[key])
         return mod
+    
+    def define(self, vars: dict):
+        keys = []
+        values = []
+        for k in vars:
+            keys.append(k.encode("utf-8"))
+            values.append(_to_node(self, vars[k]))
+        keys_type = ctypes.c_char_p * len(vars)
+        vals_type = NodeValue * len(vars)
+        _lib.NodeContext_Define_Global(self._context, keys_type(*keys), vals_type(*values), len(vars))
 
     def eval(self, code: str):
         return _to_python(self, _lib.NodeContext_Run_Script(self._context, code.encode("utf-8")))

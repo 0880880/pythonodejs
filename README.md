@@ -157,8 +157,10 @@ print(result)
 * [x] Fix function context
 * [x] Require utility
 * [x] Memory management
-* [ ] BIGINT, SYMBOL, and Python function calls
-* [ ] ES Module loading
+* [x] Python function calls
+* [x] Calling constructor functions
+* [ ] BIGINT
+* [ ] ES modules
 * [ ] Async/await bridging between Python ↔ JS
 * [ ] Automatic npm install on dependency detection
 * [ ] Better error logging
