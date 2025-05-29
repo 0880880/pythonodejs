@@ -3,3 +3,14 @@ build
 lib
 pythonodejs.o*
 .sconsign.dblite
+pythonodejs/externals
+.cache/
+__pycache__/
+LAST_LOGS.txt
+*.so
+*.so.131
+*.dylib
+*.dll
+*.lib
+compile_commands.json
+.compile_commands.json
