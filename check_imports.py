@@ -1,21 +1,25 @@
 import ast, sys
 
+
 def check_imports(filename):
-    with open(filename, 'r') as f:
+    with open(filename, "r") as f:
         lines = f.readlines()
-    tree = ast.parse(''.join(lines), filename=filename)
+    tree = ast.parse("".join(lines), filename=filename)
     body = tree.body
 
     # 1) Skip any leading module docstring / standalone strings
     i = 0
-    while i < len(body) and isinstance(body[i], ast.Expr) \
-          and isinstance(body[i].value, ast.Constant) \
-          and isinstance(body[i].value.value, str):
+    while (
+        i < len(body)
+        and isinstance(body[i], ast.Expr)
+        and isinstance(body[i].value, ast.Constant)
+        and isinstance(body[i].value.value, str)
+    ):
         i += 1
 
     # 2) Collect top-level imports
     importfrom_nodes = []
-    import_nodes     = []
+    import_nodes = []
     while i < len(body):
         node = body[i]
         if isinstance(node, ast.ImportFrom):
@@ -33,11 +37,10 @@ def check_imports(filename):
 
     # Helper to extract source lines
     def extract(ns):
-        return [lines[n.lineno - 1].rstrip("
-") for n in ns]
+        return [lines[n.lineno - 1].rstrip("") for n in ns]
 
     from_lines = extract(importfrom_nodes)
-    imp_lines  = extract(import_nodes)
+    imp_lines = extract(import_nodes)
 
     # Helper to ensure contiguous lines (no blank lines within block)
     def check_contiguous(nodes, kind):
@@ -46,7 +49,9 @@ def check_imports(filename):
         linenos = [n.lineno for n in nodes]
         for prev, curr in zip(linenos, linenos[1:]):
             if curr - prev != 1:
-                print(f"❌ `{kind}` block contains blank lines or interruptions between imports.")
+                print(
+                    f"❌ `{kind}` block contains blank lines or interruptions between imports."
+                )
                 print(f"    Found gap between lines {prev} and {curr}.")
                 sys.exit(1)
 
@@ -57,9 +62,11 @@ def check_imports(filename):
         sorted_block = sorted(block_lines, key=len, reverse=True)
         if block_lines != sorted_block:
             print(f"❌ `{kind}` block is not sorted by line-length (longest first):")
-            for l in block_lines: print(f"    {l}")
+            for l in block_lines:
+                print(f"    {l}")
             print("  should be:")
-            for l in sorted_block: print(f"    {l}")
+            for l in sorted_block:
+                print(f"    {l}")
             sys.exit(1)
 
     # 5) Single-type imports
@@ -72,18 +79,24 @@ def check_imports(filename):
     if not import_nodes:
         check_contiguous(importfrom_nodes, "from ... import")
         check_sorted(from_lines, "from ... import")
-        print("✅ `from ... import` block sorted by column size (longest first) and contiguous.")
+        print(
+            "✅ `from ... import` block sorted by column size (longest first) and contiguous."
+        )
         return
 
     # 6) Both present → enforce grouping + single blank line
     if importfrom_nodes[-1].lineno > import_nodes[0].lineno:
-        print("❌ Mixed import types: `import` found before end of `from ... import` block.")
+        print(
+            "❌ Mixed import types: `import` found before end of `from ... import` block."
+        )
         sys.exit(1)
 
     last_from = importfrom_nodes[-1].lineno
     first_imp = import_nodes[0].lineno
     if first_imp - last_from != 2 or lines[last_from].strip() != "":
-        print(f"❌ Expected exactly one blank line between line {last_from} and {first_imp}:")
+        print(
+            f"❌ Expected exactly one blank line between line {last_from} and {first_imp}:"
+        )
         print(f"    line {last_from + 1!r} → {lines[last_from]!r}")
         sys.exit(1)
 
@@ -93,9 +106,11 @@ def check_imports(filename):
 
     # 8) Finally, check each block descending
     check_sorted(from_lines, "from ... import")
-    check_sorted(imp_lines,    "import")
+    check_sorted(imp_lines, "import")
 
-    print("✅ Imports are correctly grouped, separated by one blank line, contiguous, and sorted by column size (longest first).")
+    print(
+        "✅ Imports are correctly grouped, separated by one blank line, contiguous, and sorted by column size (longest first)."
+    )
 
 
 if __name__ == "__main__":
