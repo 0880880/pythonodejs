@@ -1,4 +1,3 @@
-.venv
 build
 lib
 pythonodejs.o*
@@ -14,3 +13,40 @@ LAST_LOGS.txt
 *.lib
 compile_commands.json
 .compile_commands.json
+
+# IDE and editor folders
+.idea/
+.vscode/
+*.code-workspace
+
+# Python virtual environments
+venv/
+.venv/
+ENV/
+env/
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# JetBrains
+*.iml
+*.ipr
+*.iws
+out/
+
+# VS Code extensions
+.history/
+.vscode-test/
+
+# Others
+*.log
+*.swp
+*.swo
+*.bak
+*.tmp
+*.orig
+*.rej
