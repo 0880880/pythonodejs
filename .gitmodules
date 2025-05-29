@@ -1,3 +1,0 @@
-[submodule "external/node"]
-	path = external/node
-	url = https://github.com/nodejs/node.git
