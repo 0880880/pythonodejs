@@ -164,7 +164,7 @@ REGEXP = 17
 PROXY = 18
 GENERATOR_OBJECT = 19
 MODULE_NAMESPACE = 20
-ERROR = 21
+ERROR_T = 21
 PROMISE = 22
 SET = 23
 RETURN = 24
@@ -392,7 +392,7 @@ def _to_node(node, value):  # TODO SYMBOL
         v.type = DATE_T
         v.val_date_unix = value.timestamp()
     elif isinstance(value, BaseException):
-        v.type = ERROR
+        v.type = ERROR_T
         v.error_message = str(value)
         v.error_name = type(value).__name__
         v.error_stack = str(getattr(value, "__traceback__", None))

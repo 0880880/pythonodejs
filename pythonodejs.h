@@ -44,7 +44,7 @@ typedef enum NodeValueType : int { // explicitly 4 bytes
     PROXY,
     GENERATOR_OBJECT, // UNUSED (Object)
     MODULE_NAMESPACE, // UNUSED (Object)
-    ERROR,
+    ERROR_T,
     PROMISE,
     SET
 } NodeValueType;
