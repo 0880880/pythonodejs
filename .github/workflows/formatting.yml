@@ -1,6 +1,11 @@
 name: Formatting Check
 
 on:
+  push:
+    paths:
+      - 'pythonodejs.cpp'
+      - 'pythonodejs.h'
+      - '**/*.py'
   pull_request:
     paths:
       - 'pythonodejs.cpp'
