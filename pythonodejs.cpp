@@ -246,7 +246,7 @@ NodeValue to_node_value(NodeContext *context, v8::Local<Context> local_ctx,
             stack = *utf8;
         }
 
-        return {.type = ERROR,
+        return {.type = ERROR_T,
                 .error_message = strdup(message),
                 .error_name = strdup(name),
                 .error_stack = strdup(stack)};
