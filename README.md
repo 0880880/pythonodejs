@@ -43,40 +43,30 @@ readFile; // Return the function
 # Call JavaScript functions from Python
 content = read_file("example.txt")
 print(content)
-
-# pythonodejs automatically handles cleanup
 ```
 
-## 🔄 Integration with NPM
+<details>
+<summary>More Examples</summary>
 
-`pythonodejs` works seamlessly with NPM packages. Simply initialize an NPM project in your working directory and install the packages you need:
+### 🔄 Integration with NPM
 
 ```bash
-# Initialize an NPM project
 npm init -y
-
-# Install required packages
 npm install lodash express axios
-
-# Now use these packages directly in your Python code
 ```
-
-Then in your Python application:
 
 ```python
 from pythonodejs import Node
 
 node = Node()
 
-# Use lodash from NPM
 result = node.eval("""
 const _ = require('lodash');
 const numbers = [1, 2, 3, 4, 5];
 _.sum(numbers);
 """)
-print(f"Sum: {result}")  # Sum: 15
+print(f"Sum: {result}")
 
-# Use Express to create a simple server
 node.eval("""
 const express = require('express');
 const app = express();
@@ -87,22 +77,15 @@ app.get('/', (req, res) => {
 
 app.listen(3000, () => {
   console.log('Express server running on port 3000');
-}); // Execution will be stopped if node goes out of scope/python execution ends
+});
 """)
-
-# pythonodejs will automatically use the node_modules directory
 ```
 
-## 🔧 Advanced Usage
+### 🔧 Advanced Usage
 
-### Working with JavaScript objects
+**Working with JS Objects**
 
 ```python
-from pythonodejs import Node
-
-node = Node()
-
-# Create a JavaScript object
 person = node.eval("""
 const person = {
   name: 'John',
@@ -111,26 +94,15 @@ const person = {
     return `Hello, my name is ${this.name}`;
   }
 };
-person;  // Return the object
+person;
 """)
-
-# Access properties
-print(person['name'])  # John
-print(person['age'])   # 30
-
-# Call methods
-greeting = person['greet']()
-print(greeting)  # Hello, my name is John
+print(person['name'])
+print(person['greet']())
 ```
 
-### Passing Python values to JavaScript
+**Passing Python → JS**
 
 ```python
-from pythonodejs import Node
-
-node = Node()
-
-# Define a JavaScript function
 process_data = node.eval("""
 function processData(data) {
   return {
@@ -139,29 +111,19 @@ function processData(data) {
     message: `Processed ${data.items.length} items`
   };
 }
-processData;  // Return the function
+processData;
 """)
 
-# Call with Python dict
-result = process_data({
-  'items': [1, 2, 3, 4, 5]
-})
-
-print(result)  
-# {'processed': True, 'items': [2, 4, 6, 8, 10], 'message': 'Processed 5 items'}
+result = process_data({'items': [1, 2, 3, 4, 5]})
+print(result)
 ```
+
+</details>
 
 ## ✅ ToDo
 
 * [x] Stable release
-* [x] Fix function context
-* [x] Require utility
-* [x] Memory management
-* [x] Python function calls
-* [x] Calling constructor functions
-* [ ] BIGINT
-* [ ] ES modules
-* [ ] Async/await bridging between Python ↔ JS
+* [ ] Better ES module loading
 * [ ] Automatic npm install on dependency detection
 * [ ] Better error logging
 
