@@ -49,16 +49,16 @@ typedef enum NodeValueType : int { // explicitly 4 bytes
 } NodeValueType;
 
 typedef enum TypedArrayType : int { // explicitly 4 bytes
-    INT8,
-    UINT8,
-    INT16,
-    UINT16,
-    INT32,
-    UINT32,
-    BINT64,
-    BUINT64,
-    FLOAT32,
-    FLOAT64
+    INT8_T,
+    UINT8_T,
+    INT16_T,
+    UINT16_T,
+    INT32_T,
+    UINT32_T,
+    BINT64_T,
+    BUINT64_T,
+    FLOAT32_T,
+    FLOAT64_T
 } TypedArrayType;
 
 typedef struct NodeValue {

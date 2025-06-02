@@ -363,7 +363,7 @@ NodeValue to_node_value(NodeContext *context, v8::Local<Context> local_ctx,
             size_t length = arr->ByteLength();
             return {.type = TYPED_ARRAY,
                     .val_tarray = data,
-                    .val_tarray_type = INT8,
+                    .val_tarray_type = INT8_T,
                     .val_array_len = static_cast<int>(length)};
         } else if (value->IsUint8Array()) {
             auto arr = value.As<v8::Int8Array>();
@@ -374,7 +374,7 @@ NodeValue to_node_value(NodeContext *context, v8::Local<Context> local_ctx,
             size_t length = arr->ByteLength();
             return {.type = TYPED_ARRAY,
                     .val_tarray = data,
-                    .val_tarray_type = UINT8,
+                    .val_tarray_type = UINT8_T,
                     .val_array_len = static_cast<int>(length)};
         } else if (value->IsUint8ClampedArray()) {
             auto arr = value.As<v8::Uint8ClampedArray>();
@@ -385,7 +385,7 @@ NodeValue to_node_value(NodeContext *context, v8::Local<Context> local_ctx,
             size_t length = arr->ByteLength();
             return {.type = TYPED_ARRAY,
                     .val_tarray = data,
-                    .val_tarray_type = UINT8,
+                    .val_tarray_type = UINT8_T,
                     .val_array_len = static_cast<int>(length)};
         } else if (value->IsInt16Array()) {
             auto arr = value.As<v8::Int16Array>();
@@ -396,7 +396,7 @@ NodeValue to_node_value(NodeContext *context, v8::Local<Context> local_ctx,
             size_t length = arr->ByteLength();
             return {.type = TYPED_ARRAY,
                     .val_tarray = data,
-                    .val_tarray_type = INT16,
+                    .val_tarray_type = INT16_T,
                     .val_array_len = static_cast<int>(length)};
         } else if (value->IsUint16Array()) {
             auto arr = value.As<v8::Uint16Array>();
@@ -407,7 +407,7 @@ NodeValue to_node_value(NodeContext *context, v8::Local<Context> local_ctx,
             size_t length = arr->ByteLength();
             return {.type = TYPED_ARRAY,
                     .val_tarray = data,
-                    .val_tarray_type = UINT16,
+                    .val_tarray_type = UINT16_T,
                     .val_array_len = static_cast<int>(length)};
         } else if (value->IsInt32Array()) {
             auto arr = value.As<v8::Int32Array>();
@@ -418,7 +418,7 @@ NodeValue to_node_value(NodeContext *context, v8::Local<Context> local_ctx,
             size_t length = arr->ByteLength();
             return {.type = TYPED_ARRAY,
                     .val_tarray = data,
-                    .val_tarray_type = INT32,
+                    .val_tarray_type = INT32_T,
                     .val_array_len = static_cast<int>(length)};
         } else if (value->IsUint32Array()) {
             auto arr = value.As<v8::Uint32Array>();
@@ -429,7 +429,7 @@ NodeValue to_node_value(NodeContext *context, v8::Local<Context> local_ctx,
             size_t length = arr->ByteLength();
             return {.type = TYPED_ARRAY,
                     .val_tarray = data,
-                    .val_tarray_type = UINT32,
+                    .val_tarray_type = UINT32_T,
                     .val_array_len = static_cast<int>(length)};
         } else if (value->IsFloat32Array()) {
             auto arr = value.As<v8::Float32Array>();
@@ -440,7 +440,7 @@ NodeValue to_node_value(NodeContext *context, v8::Local<Context> local_ctx,
             size_t length = arr->ByteLength();
             return {.type = TYPED_ARRAY,
                     .val_tarray = data,
-                    .val_tarray_type = FLOAT32,
+                    .val_tarray_type = FLOAT32_T,
                     .val_array_len = static_cast<int>(length)};
         } else if (value->IsFloat64Array()) {
             auto arr = value.As<v8::Float64Array>();
@@ -451,7 +451,7 @@ NodeValue to_node_value(NodeContext *context, v8::Local<Context> local_ctx,
             size_t length = arr->ByteLength();
             return {.type = TYPED_ARRAY,
                     .val_tarray = data,
-                    .val_tarray_type = FLOAT64,
+                    .val_tarray_type = FLOAT64_T,
                     .val_array_len = static_cast<int>(length)};
         } else if (value->IsBigInt64Array()) {
             auto arr = value.As<v8::BigInt64Array>();
@@ -462,7 +462,7 @@ NodeValue to_node_value(NodeContext *context, v8::Local<Context> local_ctx,
             size_t length = arr->ByteLength();
             return {.type = TYPED_ARRAY,
                     .val_tarray = data,
-                    .val_tarray_type = BINT64,
+                    .val_tarray_type = BINT64_T,
                     .val_array_len = static_cast<int>(length)};
         } else if (value->IsBigUint64Array()) {
             auto arr = value.As<v8::BigUint64Array>();
@@ -473,7 +473,7 @@ NodeValue to_node_value(NodeContext *context, v8::Local<Context> local_ctx,
             size_t length = arr->ByteLength();
             return {.type = TYPED_ARRAY,
                     .val_tarray = data,
-                    .val_tarray_type = BUINT64,
+                    .val_tarray_type = BUINT64_T,
                     .val_array_len = static_cast<int>(length)};
         }
     } else if (value->IsDataView()) {
@@ -628,34 +628,34 @@ v8::Local<v8::Value> to_v8_value(NodeContext *context,
     } else if (value.type == TYPED_ARRAY) {
         size_t element_size = 0;
         switch (value.val_tarray_type) {
-        case INT8:
+        case INT8_T:
             element_size = 1;
             break;
-        case UINT8:
+        case UINT8_T:
             element_size = 1;
             break;
-        case INT16:
+        case INT16_T:
             element_size = 2;
             break;
-        case UINT16:
+        case UINT16_T:
             element_size = 2;
             break;
-        case INT32:
+        case INT32_T:
             element_size = 4;
             break;
-        case UINT32:
+        case UINT32_T:
             element_size = 4;
             break;
-        case BINT64:
+        case BINT64_T:
             element_size = 8;
             break;
-        case BUINT64:
+        case BUINT64_T:
             element_size = 8;
             break;
-        case FLOAT32:
+        case FLOAT32_T:
             element_size = 4;
             break;
-        case FLOAT64:
+        case FLOAT64_T:
             element_size = 8;
             break;
         default:
@@ -676,39 +676,39 @@ v8::Local<v8::Value> to_v8_value(NodeContext *context,
 
         v8::Local<v8::TypedArray> typed_array;
         switch (value.val_tarray_type) {
-        case INT8:
+        case INT8_T:
             typed_array = v8::Int8Array::New(array_buffer, 0, length_elements);
             break;
-        case UINT8:
+        case UINT8_T:
             typed_array = v8::Uint8Array::New(array_buffer, 0, length_elements);
             break;
-        case INT16:
+        case INT16_T:
             typed_array = v8::Int16Array::New(array_buffer, 0, length_elements);
             break;
-        case UINT16:
+        case UINT16_T:
             typed_array =
                 v8::Uint16Array::New(array_buffer, 0, length_elements);
             break;
-        case INT32:
+        case INT32_T:
             typed_array = v8::Int32Array::New(array_buffer, 0, length_elements);
             break;
-        case UINT32:
+        case UINT32_T:
             typed_array =
                 v8::Uint32Array::New(array_buffer, 0, length_elements);
             break;
-        case BINT64:
+        case BINT64_T:
             typed_array =
                 v8::BigInt64Array::New(array_buffer, 0, length_elements);
             break;
-        case BUINT64:
+        case BUINT64_T:
             typed_array =
                 v8::BigUint64Array::New(array_buffer, 0, length_elements);
             break;
-        case FLOAT32:
+        case FLOAT32_T:
             typed_array =
                 v8::Float32Array::New(array_buffer, 0, length_elements);
             break;
-        case FLOAT64:
+        case FLOAT64_T:
             typed_array =
                 v8::Float64Array::New(array_buffer, 0, length_elements);
             break;

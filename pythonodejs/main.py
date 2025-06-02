@@ -170,16 +170,16 @@ SET = 23
 RETURN = 24
 
 
-INT8 = 0
-UINT8 = 1
-INT16 = 2
-UINT16 = 3
-INT32 = 4
-UINT32 = 5
-BINT64 = 6
-BUINT64 = 7
-FLOAT32 = 8
-FLOAT64 = 9
+INT8_T = 0
+UINT8_T = 1
+INT16_T = 2
+UINT16_T = 3
+INT32_T = 4
+UINT32_T = 5
+BINT64_T = 6
+BUINT64_T = 7
+FLOAT32_T = 8
+FLOAT64_T = 9
 
 
 def random_int64():
@@ -410,34 +410,34 @@ def _to_node(node, value):  # TODO SYMBOL
         items = list(value)
         L = len(value)
 
-        kind = INT8
+        kind = INT8_T
         c_kind = ctypes.c_int8
         if value.typecode == "B":
-            kind = UINT8
+            kind = UINT8_T
             c_kind = ctypes.c_uint8
         elif value.typecode == "h":
-            kind = INT16
+            kind = INT16_T
             c_kind = ctypes.c_int16
         elif value.typecode == "H":
-            kind = UINT16
+            kind = UINT16_T
             c_kind = ctypes.c_uint16
         elif value.typecode == "i":
-            kind = INT32
+            kind = INT32_T
             c_kind = ctypes.c_int32
         elif value.typecode == "I":
-            kind = UINT32
+            kind = UINT32_T
             c_kind = ctypes.c_uint32
         elif value.typecode == "l":
-            kind = BINT64
+            kind = BINT64_T
             c_kind = ctypes.c_int64
         elif value.typecode == "L":
-            kind = BUINT64
+            kind = BUINT64_T
             c_kind = ctypes.c_uint64
         elif value.typecode == "f":
-            kind = FLOAT32
+            kind = FLOAT32_T
             c_kind = ctypes.c_float
         elif value.typecode == "d":
-            kind = FLOAT64
+            kind = FLOAT64_T
             c_kind = ctypes.c_double
 
         arr = (c_kind * L)()
@@ -504,31 +504,31 @@ def _to_python(node, value: NodeValue):  # TODO SYMBOL
     elif value.type == TYPED_ARRAY:
         kind = "b"
         c_kind = ctypes.c_int8
-        if value.val_tarray_type == UINT8:
+        if value.val_tarray_type == UINT8_T:
             kind = "B"
             c_kind = ctypes.c_uint8
-        elif value.val_tarray_type == INT16:
+        elif value.val_tarray_type == INT16_T:
             kind = "h"
             c_kind = ctypes.c_int16
-        elif value.val_tarray_type == UINT16:
+        elif value.val_tarray_type == UINT16:_T
             kind = "H"
             c_kind = ctypes.c_uint16
-        elif value.val_tarray_type == INT32:
+        elif value.val_tarray_type == INT32_T:
             kind = "i"
             c_kind = ctypes.c_int32
-        elif value.val_tarray_type == UINT32:
+        elif value.val_tarray_type == UINT32_T:
             kind = "I"
             c_kind = ctypes.c_uint32
-        elif value.val_tarray_type == BINT64:
+        elif value.val_tarray_type == BINT64_T:
             kind = "l"
             c_kind = ctypes.c_int64
-        elif value.val_tarray_type == BUINT64:
+        elif value.val_tarray_type == BUINT64_T:
             kind = "L"
             c_kind = ctypes.c_uint64
-        elif value.val_tarray_type == FLOAT32:
+        elif value.val_tarray_type == FLOAT32_T:
             kind = "f"
             c_kind = ctypes.c_float
-        elif value.val_tarray_type == FLOAT64:
+        elif value.val_tarray_type == FLOAT64_T:
             kind = "d"
             c_kind = ctypes.c_double
         ptr = ctypes.cast(value.val_tarray, ctypes.POINTER(c_kind))
