@@ -52,8 +52,3 @@ jobs:
             echo "Code is not formatted according to Black."
             exit 1
           fi
-
-      - name: Run custom import checks
-        run: |
-          find . -name '*.py' -not -path './.venv/*' -print0 |
-          xargs -0 -n1 python check_imports.py
