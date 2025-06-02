@@ -510,7 +510,7 @@ def _to_python(node, value: NodeValue):  # TODO SYMBOL
         elif value.val_tarray_type == INT16_T:
             kind = "h"
             c_kind = ctypes.c_int16
-        elif value.val_tarray_type == UINT16:_T
+        elif value.val_tarray_type == UINT16_T:
             kind = "H"
             c_kind = ctypes.c_uint16
         elif value.val_tarray_type == INT32_T:
