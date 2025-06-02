@@ -1,7 +1,8 @@
-import os
-import sys
-import argparse
 from collections import defaultdict
+
+import argparse
+import sys
+import os
 
 
 def human_readable(size, decimal_places=1):
