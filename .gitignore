@@ -50,3 +50,5 @@ out/
 *.tmp
 *.orig
 *.rej
+
+node_modules/
