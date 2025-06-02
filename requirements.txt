@@ -4,3 +4,7 @@ setuptools==75.8.0
 simplejson==3.20.1
 typing_extensions==4.13.2
 wheel==0.45.1
+scons==4.9.1
+colorama
+scons_compiledb
+pooch
