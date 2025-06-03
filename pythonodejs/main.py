@@ -8,6 +8,7 @@ import ctypes
 import random
 import array
 import types
+import copy
 import os
 import re
 
@@ -41,6 +42,7 @@ class NodeValue(ctypes.Structure):
 
 NodeValue._fields_ = [
     ("type", ctypes.c_int),
+    ("self_ptr", ctypes.void_p),
     ("val_bool", ctypes.c_bool),
     ("val_num", ctypes.c_double),
     ("val_string", ctypes.c_char_p),
@@ -217,6 +219,22 @@ class NativeObject(dict, JSValue):
         dict.__init__(self, *args, **kwargs)
         JSValue.__init__(self, nv)
 
+    def __getattr__(self, name):
+        try:
+            value = self[name]
+            if isinstance(value, dict) and not isinstance(value, NativeObject):
+                value = NativeObject(self._nv, value)
+                self[name] = value
+            return value
+        except KeyError:
+            raise AttributeError(name)
+
+    def __setattr__(self, name, value):
+        if name.startswith("_") or name in self.__dict__:
+            super().__setattr__(name, value)
+        else:
+            self[name] = value
+
     def __del__(self):
         _lib.Node_Dispose_Value(self._nv)
 
@@ -306,7 +324,7 @@ class Func(JSValue):
     def __init__(self, name, node, f):
         super().__init__(f)
         self._node = node
-        self.name = name
+        self.__name__ = name
 
     def __call__(self, *args, **kwargs):
         L = len(args)
@@ -333,7 +351,7 @@ class Func(JSValue):
         )
 
     def __str__(self):
-        return f"{self.name}@Node"
+        return f"{self.__name__}@Node"
 
     def __del__(self):
         _lib.Node_Dispose_Value(self._nv)
@@ -471,7 +489,7 @@ def _to_node(node, value):  # TODO SYMBOL
         v.type = FUNCTION
         v.val_string = name_enc
         v.function = fun.function
-        node._python_funcs[value.__name__] = value
+        node._python_funcs[name_enc] = value
     else:
         v.type = STRING
         v.val_string = value.__str__().encode("utf-8")
