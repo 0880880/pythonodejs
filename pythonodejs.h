@@ -64,6 +64,7 @@ typedef enum TypedArrayType : int { // explicitly 4 bytes
 
 typedef struct NodeValue {
     NodeValueType type;
+    void *self_ptr;
     bool val_bool;
     double val_num;
     char *val_string; // Used for string, symbol description, function name, and

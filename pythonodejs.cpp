@@ -156,19 +156,27 @@ void promise_callback(const v8::FunctionCallbackInfo<v8::Value> &args) {
 
 NodeValue to_node_value(NodeContext *context, v8::Local<Context> local_ctx,
                         v8::Local<Value> value) {
+    v8::Global<v8::Value> *self_heap =
+        new v8::Global<v8::Value>(context->isolate, value);
     if (value->IsUndefined()) {
+        self_heap->Reset();
         return {.type = UNDEFINED};
     } else if (value->IsNull()) {
+        self_heap->Reset();
         return {.type = NULL_T};
     } else if (value->IsNumber()) {
+        self_heap->Reset();
         return {.type = NUMBER, .val_num = value.As<v8::Number>()->Value()};
     } else if (value->IsBoolean()) {
+        self_heap->Reset();
         return {.type = BOOLEAN_T,
                 .val_bool = value.As<v8::Boolean>()->Value()};
     } else if (value->IsString()) {
+        self_heap->Reset();
         v8::String::Utf8Value utf8(context->isolate, value.As<v8::String>());
         return {.type = STRING, .val_string = strdup(*utf8)};
     } else if (value->IsSymbol()) {
+        self_heap->Reset();
         v8::Local<v8::Symbol> symbol = value.As<v8::Symbol>();
         v8::String::Utf8Value utf8(context->isolate,
                                    symbol->Description(context->isolate));
@@ -178,6 +186,7 @@ NodeValue to_node_value(NodeContext *context, v8::Local<Context> local_ctx,
                 .val_string = strdup(*utf8),
                 .val_external_ptr = static_cast<void *>(heapGlobal)};
     } else if (value->IsBigInt()) {
+        self_heap->Reset();
         v8::String::Utf8Value utf8(
             context->isolate,
             value.As<v8::BigInt>()->ToString(local_ctx).ToLocalChecked());
@@ -189,6 +198,7 @@ NodeValue to_node_value(NodeContext *context, v8::Local<Context> local_ctx,
         Func *f = new Func();
         f->function.Reset(context->isolate, func);
         ret.type = FUNCTION;
+        ret.self_ptr = self_heap;
         ret.val_string = strdup(*utf8);
         ret.function = f;
         return ret;
@@ -196,8 +206,10 @@ NodeValue to_node_value(NodeContext *context, v8::Local<Context> local_ctx,
         v8::Local<v8::Array> array = value.As<v8::Array>();
         int length = array->Length();
         NodeValue *arr = (NodeValue *)malloc(length * sizeof(NodeValue));
-        NodeValue nv = {
-            .type = ARRAY, .val_array = arr, .val_array_len = length};
+        NodeValue nv = {.type = ARRAY,
+                        .self_ptr = self_heap,
+                        .val_array = arr,
+                        .val_array_len = length};
         for (int i = 0; i < length; i++) {
             arr[i] = to_node_value(context, local_ctx,
                                    array->Get(local_ctx, i).ToLocalChecked());
@@ -207,9 +219,11 @@ NodeValue to_node_value(NodeContext *context, v8::Local<Context> local_ctx,
         }
         return nv;
     } else if (value->IsDate()) {
+        self_heap->Reset();
         v8::Local<v8::Date> date = value.As<v8::Date>();
         return {.type = DATE_T, .val_date_unix = date->ValueOf()};
     } else if (value->IsNativeError()) {
+        self_heap->Reset();
         v8::Local<v8::Object> error_obj = value.As<v8::Object>();
 
         char *message;
@@ -251,6 +265,7 @@ NodeValue to_node_value(NodeContext *context, v8::Local<Context> local_ctx,
                 .error_name = strdup(name),
                 .error_stack = strdup(stack)};
     } else if (value->IsRegExp()) {
+        self_heap->Reset();
         v8::Local<v8::RegExp> regex = value.As<v8::RegExp>();
         v8::Local<v8::String> pattern = regex->GetSource();
         v8::RegExp::Flags flags = regex->GetFlags();
@@ -293,7 +308,7 @@ NodeValue to_node_value(NodeContext *context, v8::Local<Context> local_ctx,
         v8::Local<v8::Function> catch_fn =
             catch_tpl->GetFunction(local_ctx).ToLocalChecked();
         promise->Catch(local_ctx, catch_fn).ToLocalChecked();
-        return {.type = PROMISE, .future_id = id};
+        return {.type = PROMISE, .self_ptr = self_heap, .future_id = id};
     } else if (value->IsMap()) {
         v8::Local<v8::Map> map = value.As<v8::Map>();
         v8::Local<v8::Array> array =
@@ -304,6 +319,7 @@ NodeValue to_node_value(NodeContext *context, v8::Local<Context> local_ctx,
         NodeValue *keys = (NodeValue *)malloc(len * sizeof(NodeValue));
         NodeValue *values = (NodeValue *)malloc(len * sizeof(NodeValue));
         NodeValue nv = {.type = MAP,
+                        .self_ptr = self_heap,
                         .map_keys = keys,
                         .object_values = values,
                         .object_len = len};
@@ -328,8 +344,12 @@ NodeValue to_node_value(NodeContext *context, v8::Local<Context> local_ctx,
                 entries->Get(local_ctx, i).ToLocalChecked();
             arr[i] = to_node_value(context, local_ctx, val);
         }
-        return {.type = SET, .val_array = arr, .val_array_len = len};
+        return {.type = SET,
+                .self_ptr = self_heap,
+                .val_array = arr,
+                .val_array_len = len};
     } else if (value->IsArrayBuffer()) {
+        self_heap->Reset();
         v8::Local<v8::ArrayBuffer> buffer = value.As<v8::ArrayBuffer>();
         std::shared_ptr<v8::BackingStore> backing = buffer->GetBackingStore();
 
@@ -342,6 +362,7 @@ NodeValue to_node_value(NodeContext *context, v8::Local<Context> local_ctx,
                 .val_tarray = dest,
                 .val_array_len = static_cast<int>(size)};
     } else if (value->IsDataView()) {
+        self_heap->Reset();
         auto arr = value.As<v8::DataView>();
         v8::Local<v8::ArrayBuffer> buffer = arr->Buffer();
         uint8_t *data =
@@ -352,8 +373,10 @@ NodeValue to_node_value(NodeContext *context, v8::Local<Context> local_ctx,
                 .val_tarray = data,
                 .val_array_len = static_cast<int>(length)};
     } else if (value->IsSharedArrayBuffer()) {
+        self_heap->Reset();
         // TODO
     } else if (value->IsTypedArray()) {
+        self_heap->Reset();
         if (value->IsInt8Array()) {
             auto arr = value.As<v8::Int8Array>();
             v8::Local<v8::ArrayBuffer> buffer = arr->Buffer();
@@ -373,6 +396,7 @@ NodeValue to_node_value(NodeContext *context, v8::Local<Context> local_ctx,
                 arr->ByteOffset();
             size_t length = arr->ByteLength();
             return {.type = TYPED_ARRAY,
+                    .self_ptr = self_heap,
                     .val_tarray = data,
                     .val_tarray_type = UINT8_T,
                     .val_array_len = static_cast<int>(length)};
@@ -384,6 +408,7 @@ NodeValue to_node_value(NodeContext *context, v8::Local<Context> local_ctx,
                 arr->ByteOffset();
             size_t length = arr->ByteLength();
             return {.type = TYPED_ARRAY,
+                    .self_ptr = self_heap,
                     .val_tarray = data,
                     .val_tarray_type = UINT8_T,
                     .val_array_len = static_cast<int>(length)};
@@ -395,6 +420,7 @@ NodeValue to_node_value(NodeContext *context, v8::Local<Context> local_ctx,
                 arr->ByteOffset();
             size_t length = arr->ByteLength();
             return {.type = TYPED_ARRAY,
+                    .self_ptr = self_heap,
                     .val_tarray = data,
                     .val_tarray_type = INT16_T,
                     .val_array_len = static_cast<int>(length)};
@@ -406,6 +432,7 @@ NodeValue to_node_value(NodeContext *context, v8::Local<Context> local_ctx,
                 arr->ByteOffset();
             size_t length = arr->ByteLength();
             return {.type = TYPED_ARRAY,
+                    .self_ptr = self_heap,
                     .val_tarray = data,
                     .val_tarray_type = UINT16_T,
                     .val_array_len = static_cast<int>(length)};
@@ -417,6 +444,7 @@ NodeValue to_node_value(NodeContext *context, v8::Local<Context> local_ctx,
                 arr->ByteOffset();
             size_t length = arr->ByteLength();
             return {.type = TYPED_ARRAY,
+                    .self_ptr = self_heap,
                     .val_tarray = data,
                     .val_tarray_type = INT32_T,
                     .val_array_len = static_cast<int>(length)};
@@ -428,6 +456,7 @@ NodeValue to_node_value(NodeContext *context, v8::Local<Context> local_ctx,
                 arr->ByteOffset();
             size_t length = arr->ByteLength();
             return {.type = TYPED_ARRAY,
+                    .self_ptr = self_heap,
                     .val_tarray = data,
                     .val_tarray_type = UINT32_T,
                     .val_array_len = static_cast<int>(length)};
@@ -439,6 +468,7 @@ NodeValue to_node_value(NodeContext *context, v8::Local<Context> local_ctx,
                 arr->ByteOffset();
             size_t length = arr->ByteLength();
             return {.type = TYPED_ARRAY,
+                    .self_ptr = self_heap,
                     .val_tarray = data,
                     .val_tarray_type = FLOAT32_T,
                     .val_array_len = static_cast<int>(length)};
@@ -450,6 +480,7 @@ NodeValue to_node_value(NodeContext *context, v8::Local<Context> local_ctx,
                 arr->ByteOffset();
             size_t length = arr->ByteLength();
             return {.type = TYPED_ARRAY,
+                    .self_ptr = self_heap,
                     .val_tarray = data,
                     .val_tarray_type = FLOAT64_T,
                     .val_array_len = static_cast<int>(length)};
@@ -461,6 +492,7 @@ NodeValue to_node_value(NodeContext *context, v8::Local<Context> local_ctx,
                 arr->ByteOffset();
             size_t length = arr->ByteLength();
             return {.type = TYPED_ARRAY,
+                    .self_ptr = self_heap,
                     .val_tarray = data,
                     .val_tarray_type = BINT64_T,
                     .val_array_len = static_cast<int>(length)};
@@ -472,6 +504,7 @@ NodeValue to_node_value(NodeContext *context, v8::Local<Context> local_ctx,
                 arr->ByteOffset();
             size_t length = arr->ByteLength();
             return {.type = TYPED_ARRAY,
+                    .self_ptr = self_heap,
                     .val_tarray = data,
                     .val_tarray_type = BUINT64_T,
                     .val_array_len = static_cast<int>(length)};
@@ -483,9 +516,11 @@ NodeValue to_node_value(NodeContext *context, v8::Local<Context> local_ctx,
             v[i] = i;
         }
     } else if (value->IsExternal()) {
+        self_heap->Reset();
         v8::Local<v8::External> external = value.As<v8::External>();
         return {.type = EXTERNAL, .val_external_ptr = external->Value()};
     } else if (value->IsProxy()) {
+        self_heap->Reset();
         v8::Local<v8::Proxy> proxy = value.As<v8::Proxy>();
         v8::Local<v8::Value> target = proxy->GetTarget();
         v8::Local<v8::Value> handler = proxy->GetHandler();
@@ -504,6 +539,7 @@ NodeValue to_node_value(NodeContext *context, v8::Local<Context> local_ctx,
         char **key_arr = (char **)malloc(length * sizeof(char *));
         NodeValue *objects = (NodeValue *)malloc(length * sizeof(NodeValue));
         NodeValue nv = {.type = OBJECT,
+                        .self_ptr = self_heap,
                         .object_keys = key_arr,
                         .object_values = objects,
                         .object_len = length};
@@ -530,6 +566,7 @@ NodeValue to_node_value(NodeContext *context, v8::Local<Context> local_ctx,
         std::cout << "PYTHONODEJS: Unsupported type \"" << *typeStr
                   << "\" ignored.\n";
     }
+    self_heap->Reset();
     return {};
 }
 
