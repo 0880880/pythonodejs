@@ -506,7 +506,7 @@ def _to_python(node, value: NodeValue):  # TODO SYMBOL
         _lib.Node_Dispose_Value(value)
         return s
     elif value.type == FUNCTION:
-        return Func(value.val_string, node, value)
+        return Func(value.val_string.decode("utf-8"), node, value)
     elif value.type == SET:
         arr = NativeSet(value)
         L = value.val_array_len
