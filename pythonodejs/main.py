@@ -42,7 +42,7 @@ class NodeValue(ctypes.Structure):
 
 NodeValue._fields_ = [
     ("type", ctypes.c_int),
-    ("self_ptr", ctypes.void_p),
+    ("self_ptr", ctypes.c_void_p),
     ("val_bool", ctypes.c_bool),
     ("val_num", ctypes.c_double),
     ("val_string", ctypes.c_char_p),
