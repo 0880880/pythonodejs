@@ -123,7 +123,7 @@ print(result)
 ## ✅ ToDo
 
 * [x] Stable release
-* [ ] Better ES module loading
+* [ ] Loading ES Modules
 * [ ] Automatic npm install on dependency detection
 * [ ] Better error logging
 
