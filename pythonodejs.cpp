@@ -68,10 +68,56 @@ int64_t randomInt64() {
     return dist(gen);
 }
 
+void debugValue(v8::Local<v8::Value> value, v8::Isolate *isolate,
+                v8::Local<Context> context) {
+
+    v8::String::Utf8Value typeStr(
+        isolate, value->TypeOf(isolate)->ToString(context).ToLocalChecked());
+    std::cout << "Type: " << *typeStr << "\n";
+
+    if (value->IsBoolean() || value->IsNumber() || value->IsString() ||
+        value->IsNull() || value->IsUndefined()) {
+        v8::String::Utf8Value valStr(isolate,
+                                     value->ToString(context).ToLocalChecked());
+        std::cout << "Value: " << *valStr << "\n";
+    }
+
+    if (value->IsObject()) {
+        auto obj = value.As<v8::Object>();
+        v8::Local<v8::Array> props;
+        std::cout << "OBJECT" << "GETTING PROPS" << std::endl;
+        if (obj->GetOwnPropertyNames(context).ToLocal(&props)) {
+            uint32_t len = props->Length();
+            std::cout << "Object has " << len << " own properties:\n";
+            for (uint32_t i = 0; i < len; ++i) {
+                v8::Local<v8::Value> key, val;
+                if (!props->Get(context, i).ToLocal(&key))
+                    continue;
+                if (!obj->Get(context, key).ToLocal(&val))
+                    continue;
+
+                v8::String::Utf8Value keyStr(isolate, key);
+                v8::String::Utf8Value valStr(
+                    isolate, val->ToString(context).ToLocalChecked());
+                std::cout << "  [" << *keyStr << "] = " << *valStr << "\n";
+            }
+        }
+    }
+}
+
 void run_loop_blocking(NodeContext *context) {
     while (uv_loop_alive(context->loop)) {
         uv_run(context->loop, UV_RUN_DEFAULT);
     }
+    /* uv_walk(
+        context->loop,
+        [](uv_handle_t *handle, void *) {
+            if (!uv_is_closing(handle))
+                uv_close(handle, nullptr);
+        },
+        nullptr); */
+    node::EmitBeforeExit(context->env);
+    node::EmitExit(context->env);
 }
 
 NodeContext *NodeContext_Create() { return new NodeContext(); }
@@ -176,15 +222,12 @@ NodeValue to_node_value(NodeContext *context, v8::Local<Context> local_ctx,
         v8::String::Utf8Value utf8(context->isolate, value.As<v8::String>());
         return {.type = STRING, .val_string = strdup(*utf8)};
     } else if (value->IsSymbol()) {
-        self_heap->Reset();
         v8::Local<v8::Symbol> symbol = value.As<v8::Symbol>();
         v8::String::Utf8Value utf8(context->isolate,
                                    symbol->Description(context->isolate));
-        auto *heapGlobal = new v8::Global<v8::Value>(context->isolate, symbol);
-
         return {.type = SYMBOL,
                 .val_string = strdup(*utf8),
-                .val_external_ptr = static_cast<void *>(heapGlobal)};
+                .val_external_ptr = static_cast<void *>(self_heap)};
     } else if (value->IsBigInt()) {
         self_heap->Reset();
         v8::String::Utf8Value utf8(
@@ -515,10 +558,34 @@ NodeValue to_node_value(NodeContext *context, v8::Local<Context> local_ctx,
              ++i) { // Off-by-one error (clang-tidy detects)
             v[i] = i;
         }
-    } else if (value->IsExternal()) {
-        self_heap->Reset();
-        v8::Local<v8::External> external = value.As<v8::External>();
-        return {.type = EXTERNAL, .val_external_ptr = external->Value()};
+    } else if (value->IsExternal()) { // at the end to not override other
+                                      // objects.
+        v8::Local<v8::Object> obj = value.As<v8::Object>();
+        v8::Local<v8::Array> keys =
+            obj->GetOwnPropertyNames(local_ctx).ToLocalChecked();
+        int length = keys->Length();
+        char **key_arr = (char **)malloc(length * sizeof(char *));
+        NodeValue *objects = (NodeValue *)malloc(length * sizeof(NodeValue));
+        NodeValue nv = {.type = EXTERNAL,
+                        .object_keys = key_arr,
+                        .object_values = objects,
+                        .object_len = length,
+                        .val_external_ptr = static_cast<void *>(self_heap)};
+        for (uint32_t i = 0; i < length; ++i) {
+            v8::Local<v8::Value> key = keys->Get(local_ctx, i).ToLocalChecked();
+            v8::String::Utf8Value utf8(context->isolate, key);
+            size_t len = strlen(*utf8);
+            key_arr[i] = (char *)malloc(len + 1); // +1 for null terminator
+            strcpy(key_arr[i], strdup(*utf8));
+            v8::Local<v8::Value> oval;
+            if (obj->Get(local_ctx, key).ToLocal(&oval)) {
+                objects[i] = to_node_value(context, local_ctx, oval);
+                Val *parent = new Val();
+                parent->value.Reset(context->isolate, value);
+                objects[i].parent = parent;
+            }
+        }
+        return nv;
     } else if (value->IsProxy()) {
         self_heap->Reset();
         v8::Local<v8::Proxy> proxy = value.As<v8::Proxy>();
@@ -847,110 +914,8 @@ void NodeContext_FutureUpdate(NodeContext *context, int64_t id,
     std::cerr << "PYTHONODEJS: Invalid future " << id << std::endl;
 }
 
-struct ImportData {
-    Isolate *isolate;
-    uv_fs_t open_req;
-    uv_fs_t read_req;
-    uv_fs_t close_req;
-    uv_buf_t buffer;
-    v8::Global<v8::Promise::Resolver> *resolver;
-    v8::Global<v8::Context> *global_ctx;
-    char *data = nullptr;
-    size_t capacity = 0;
-    size_t length = 0;
-};
-
-void import_file_on_read(uv_fs_t *req);
-
-void import_file_on_open(uv_fs_t *req) {
-    ImportData *data = static_cast<ImportData *>(req->data);
-    if (req->result >= 0) {
-        data->buffer = uv_buf_init(new char[1024], 1024);
-        uv_fs_read(uv_default_loop(), &data->read_req, req->result,
-                   &data->buffer, 1, -1, import_file_on_read);
-    } else {
-        delete data;
-        std::cerr << "PYTHONODEJS: Error opening file: "
-                  << uv_strerror((int)req->result) << "\n";
-    }
-    uv_fs_req_cleanup(req);
-}
-
-void import_file_on_read(uv_fs_t *req) {
-    ImportData *data = static_cast<ImportData *>(req->data);
-    if (req->result < 0) {
-        std::cerr << "PYTHONODEJS: Read error: "
-                  << uv_strerror((int)req->result) << "\n";
-        delete[] data->buffer.base;
-        delete[] data->data;
-        delete data;
-    } else if (req->result == 0) {
-        // EOF reached, close file
-        data->data[data->length] = '\0'; // Null-terminate
-
-        v8::Local<v8::String> source_v8 =
-            v8::String::NewFromUtf8(data->isolate, data->data,
-                                    v8::NewStringType::kNormal)
-                .ToLocalChecked();
-        v8::Local<v8::String> resource_name =
-            v8::String::NewFromUtf8(data->isolate, "module.mjs",
-                                    v8::NewStringType::kNormal)
-                .ToLocalChecked();
-        v8::ScriptCompiler::Source source(source_v8,
-                                          v8::ScriptOrigin(resource_name));
-        Locker locker(data->isolate);
-        Isolate::Scope isolate_scope(data->isolate);
-        HandleScope handle_scope(data->isolate);
-        v8::Local<Context> local_ctx = data->global_ctx->Get(data->isolate);
-        Context::Scope context_scope(local_ctx);
-
-        v8::MaybeLocal<v8::Module> maybe_module =
-            v8::ScriptCompiler::CompileModule(data->isolate, &source);
-        v8::Local<v8::Module> module;
-        if (!maybe_module.ToLocal(&module)) {
-            v8::Local<v8::String> message =
-                v8::String::NewFromUtf8(
-                    data->isolate, "PYTHONODEJS: Failed to compile module\n")
-                    .ToLocalChecked();
-            v8::Local<v8::Value> exception = v8::Exception::Error(message);
-            v8::Local<v8::Promise::Resolver> resolver =
-                data->resolver->Get(data->isolate);
-            resolver->Reject(local_ctx, exception).Check();
-        } else {
-
-            v8::Local<v8::Promise::Resolver> resolver =
-                data->resolver->Get(data->isolate);
-            resolver->Resolve(local_ctx, module->GetModuleNamespace()).Check();
-        }
-
-        uv_fs_close(uv_default_loop(), &data->close_req, data->open_req.result,
-                    NULL);
-
-        data->global_ctx->Reset();
-        data->resolver->Reset();
-        delete[] data->buffer.base;
-        delete[] data->data;
-        delete data;
-    } else {
-        if (data->length + req->result > data->capacity) {
-            data->capacity = (data->length + req->result + 1) * 2;
-            char *new_data = new char[data->capacity];
-            memcpy(new_data, data->data, data->length);
-            delete[] data->data;
-            data->data = new_data;
-        }
-
-        memcpy(data->data + data->length, data->buffer.base, req->result);
-        data->length += req->result;
-
-        uv_fs_read(uv_default_loop(), req, data->open_req.result, &data->buffer,
-                   1, -1, import_file_on_read);
-        return;
-    }
-    uv_fs_req_cleanup(req);
-}
-
-int NodeContext_Init(NodeContext *context, int thread_pool_size) {
+int NodeContext_Init(NodeContext *context, char **imports, int num_imports,
+                     int thread_pool_size) {
 
     std::vector<std::string> errors;
 
@@ -975,6 +940,8 @@ int NodeContext_Init(NodeContext *context, int thread_pool_size) {
     context->loop = loop;
     Isolate *isolate = context->isolate;
 
+    isolate->SetData(0, context);
+
     int exit_code = 0;
     {
         Locker locker(isolate);
@@ -985,17 +952,49 @@ int NodeContext_Init(NodeContext *context, int thread_pool_size) {
         context->global_ctx = std::move(global_ctx);
         Context::Scope context_scope(local_ctx);
 
+        v8::Local<v8::Array> importArr =
+            v8::Array::New(context->isolate, num_imports);
+        for (int i = 0; i < num_imports; i++) {
+            importArr
+                ->Set(local_ctx, i,
+                      v8::String::NewFromUtf8(isolate, imports[i])
+                          .ToLocalChecked())
+                .Check();
+        }
+
+        local_ctx->Global()
+            ->Set(local_ctx,
+                  v8::String::NewFromUtf8Literal(isolate, "importNames"),
+                  importArr)
+            .Check();
+
         v8::Local<v8::Function> require = v8::Local<v8::Function>::Cast(
             node::LoadEnvironment(
                 env,
                 R"(const { createRequire } = require('module');
                  const publicRequire = createRequire(process.cwd() + '/');
-                 globalThis.require = publicRequire;
-                 globalThis.__require__ = publicRequire;
-                 return globalThis.require;)")
+                 
+(async (names) => {
+  if (globalThis.imports || !names) return;
+
+  globalThis.imports = {};
+
+  await Promise.all(names.map(async name => {
+    globalThis.imports[name] = await import(`./${name}.js`);
+  }));
+
+  delete globalThis.importNames;
+  
+})(globalThis.importNames);
+                 return publicRequire;)")
                 .ToLocalChecked());
 
         run_loop_blocking(context);
+
+        local_ctx->Global()
+            ->Set(local_ctx, v8::String::NewFromUtf8Literal(isolate, "require"),
+                  require)
+            .Check();
 
         v8::Local<Value> vm_string[] = {
             v8::String::NewFromUtf8Literal(isolate, "vm")};
@@ -1011,49 +1010,6 @@ int NodeContext_Init(NodeContext *context, int thread_pool_size) {
                          .As<v8::Function>());
 
         context->runInThisContext = std::move(runInThisContext);
-
-        isolate->SetHostImportModuleDynamicallyCallback(
-            [](v8::Local<v8::Context> context,
-               v8::Local<v8::Data> host_defined_options,
-               v8::Local<v8::Value> resource_name,
-               v8::Local<v8::String> specifier,
-               v8::Local<v8::FixedArray> import_assertions)
-                -> v8::MaybeLocal<v8::Promise> {
-                v8::Isolate *isolate = context->GetIsolate();
-                // Create a promise resolver
-                v8::Local<v8::Promise::Resolver> resolver =
-                    v8::Promise::Resolver::New(context).ToLocalChecked();
-
-                v8::Global<v8::Promise::Resolver> *resolver_g =
-                    new v8::Global<v8::Promise::Resolver>(isolate, resolver);
-
-                v8::Local<Context> local_ctx = isolate->GetCurrentContext();
-                v8::Global<Context> global_ctx(isolate, local_ctx);
-
-                v8::String::Utf8Value utf8(isolate, specifier);
-                char *specifier_str = *utf8;
-
-                if (strncmp(specifier_str, "http://", 7) == 0 ||
-                    strncmp(specifier_str, "https://", 8) == 0) {
-                    uv_fs_t open_req;
-                    ImportData *data = new ImportData();
-                    data->isolate = isolate;
-                    data->resolver = resolver_g;
-                    data->global_ctx = &global_ctx;
-                    open_req.data = data;
-
-                    uv_fs_open(uv_default_loop(), &open_req, specifier_str,
-                               O_RDONLY, 0, import_file_on_open);
-                }
-                /*
-                                const char *cstr = err.c_str();
-                                resolver
-                                    ->Reject(context, v8::Exception::Error(
-                                                          v8::String::NewFromUtf8(isolate,
-                   cstr) .ToLocalChecked())) .Check();
-                 */
-                return resolver->GetPromise();
-            });
 
         run_loop_blocking(context);
     }
@@ -1087,6 +1043,9 @@ NodeValue NodeContext_Run_Script(NodeContext *context, const char *code) {
             context->runInThisContext.Get(context->isolate)
                 ->Call(context->isolate, local_ctx, local_ctx->Global(), 1, s)
                 .ToLocalChecked();
+
+        // v8::Local<v8::Value> result =
+        //     node::LoadEnvironment(context->env, code).ToLocalChecked();
 
         nv_res = to_node_value(context, local_ctx, result);
 
@@ -1153,43 +1112,6 @@ NodeValue NodeContext_Create_Function(NodeContext *context,
         .Check();
 
     return to_node_value(context, local_ctx, fn);
-}
-
-void debugValue(v8::Local<v8::Value> value, v8::Isolate *isolate,
-                v8::Local<Context> context) {
-
-    v8::String::Utf8Value typeStr(
-        isolate, value->TypeOf(isolate)->ToString(context).ToLocalChecked());
-    std::cout << "Type: " << *typeStr << "\n";
-
-    if (value->IsBoolean() || value->IsNumber() || value->IsString() ||
-        value->IsNull() || value->IsUndefined()) {
-        v8::String::Utf8Value valStr(isolate,
-                                     value->ToString(context).ToLocalChecked());
-        std::cout << "Value: " << *valStr << "\n";
-    }
-
-    if (value->IsObject()) {
-        auto obj = value.As<v8::Object>();
-        v8::Local<v8::Array> props;
-        std::cout << "OBJECT" << "GETTING PROPS" << std::endl;
-        if (obj->GetOwnPropertyNames(context).ToLocal(&props)) {
-            uint32_t len = props->Length();
-            std::cout << "Object has " << len << " own properties:\n";
-            for (uint32_t i = 0; i < len; ++i) {
-                v8::Local<v8::Value> key, val;
-                if (!props->Get(context, i).ToLocal(&key))
-                    continue;
-                if (!obj->Get(context, key).ToLocal(&val))
-                    continue;
-
-                v8::String::Utf8Value keyStr(isolate, key);
-                v8::String::Utf8Value valStr(
-                    isolate, val->ToString(context).ToLocalChecked());
-                std::cout << "  [" << *keyStr << "] = " << *valStr << "\n";
-            }
-        }
-    }
 }
 
 NodeValue NodeContext_Call_Function(NodeContext *context, NodeValue function,

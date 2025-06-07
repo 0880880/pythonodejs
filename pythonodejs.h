@@ -100,7 +100,8 @@ typedef void *(*FutureCallback)(int64_t id, NodeValue result, bool reject);
 
 EXPORT NodeContext *NodeContext_Create();
 EXPORT int NodeContext_Setup(NodeContext *context, int argc, char **argv);
-EXPORT int NodeContext_Init(NodeContext *context, int thread_pool_size);
+EXPORT int NodeContext_Init(NodeContext *context, char **imports,
+                            int num_imports, int thread_pool_size);
 
 EXPORT void NodeContext_SetCallback(NodeContext *context, Callback cb);
 EXPORT void NodeContext_SetFutureCallback(NodeContext *context,

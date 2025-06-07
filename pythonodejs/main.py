@@ -87,7 +87,12 @@ _lib.NodeContext_Setup.argtypes = [
 ]
 
 _lib.NodeContext_Init.restype = ctypes.c_int
-_lib.NodeContext_Init.argtypes = [ctypes.c_void_p, ctypes.c_int]
+_lib.NodeContext_Init.argtypes = [
+    ctypes.c_void_p,
+    ctypes.POINTER(ctypes.c_char_p),
+    ctypes.c_int,
+    ctypes.c_int,
+]
 
 _lib.NodeContext_Define_Global.restype = None
 _lib.NodeContext_SetCallback.argtypes = [ctypes.c_void_p, CALLBACK]
@@ -361,6 +366,33 @@ class JSExternal:
     def __init__(self, ptr):
         self._ptr = ptr
 
+    def __getattr__(self, name):
+        try:
+            value = self[name]
+            if isinstance(value, dict) and not isinstance(value, NativeObject):
+                value = NativeObject(self._nv, value)
+                self[name] = value
+            return value
+        except KeyError:
+            raise AttributeError(name)
+
+    def __setattr__(self, name, value):
+        if name.startswith("_") or name in self.__dict__:
+            super().__setattr__(name, value)
+        else:
+            self[name] = value
+
+
+class JSSymbol:
+    def __init__(self, ptr, description):
+        self._ptr = ptr
+        self.description = description
+
+    def __str__(self):
+        if self.description:
+            return f"Symbol({self.description})"
+        return f"Symbol"
+
 
 class JSProxy(JSValue):
     def __init__(self, nv, target, handler):
@@ -385,6 +417,14 @@ def _to_node(node, value):  # TODO SYMBOL
     elif isinstance(value, datetime.datetime):
         v.type = DATE_T
         v.val_date_unix = value.timestamp()
+    elif isinstance(value, JSExternal):
+        v.type = EXTERNAL
+        v.val_external_ptr = value._ptr
+    elif isinstance(value, JSSymbol):
+        v.type = SYMBOL
+        v.val_external_ptr = value._ptr
+        if value.description:
+            v.val_string = value.description.encode("utf-8")
     elif isinstance(value, re.Pattern):
         v.type = REGEXP
         v.val_string = value.pattern.encode("utf-8")
@@ -489,7 +529,7 @@ def _to_node(node, value):  # TODO SYMBOL
         v.type = FUNCTION
         v.val_string = name_enc
         v.function = fun.function
-        node._python_funcs[name_enc] = value
+        node._python_funcs[value.__name__] = value
     else:
         v.type = STRING
         v.val_string = value.__str__().encode("utf-8")
@@ -576,6 +616,12 @@ def _to_python(node, value: NodeValue):  # TODO SYMBOL
         return obj
     elif value.type == DATE_T:
         return NativeDatetime(node, value.val_date_unix)
+    elif value.type == EXTERNAL:
+        return NativeSymbol(value.val_external_ptr)
+    elif value.type == SYMBOL:
+        if value.val_string != 0:
+            return JSSymbol(value.val_external_ptr, value.val_string.decode("utf-8"))
+        return JSSymbol(value.val_external_ptr)
     elif value.type == REGEXP:
         flags = 0
         if value.val_regex_flags & (1 << 1):  # kIgnoreCase
@@ -698,7 +744,10 @@ class Node:
         error = _lib.NodeContext_Setup(self._context, 1, argv)
         if not error == 0:
             raise Exception("Failed to setup node.")
-        error = _lib.NodeContext_Init(self._context, thread_pool_size)
+        ImportsArrayType = ctypes.c_char_p * 0
+        c_array = ctypes.cast(ImportsArrayType(*[]), ctypes.POINTER(ctypes.c_char_p))
+
+        error = _lib.NodeContext_Init(self._context, c_array, 0, thread_pool_size)
         if not error == 0:
             raise Exception("Failed to init node.")
 
@@ -729,9 +778,7 @@ class Node:
             self,
             _lib.NodeContext_Run_Script(
                 self._context,
-                _import_pattern.sub(
-                    lambda m: f"__dynamic_import__({m.group(1)})", code
-                ).encode("utf-8"),
+                code.encode("utf-8"),
             ),
         )
 
