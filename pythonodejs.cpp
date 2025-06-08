@@ -20,7 +20,6 @@ using v8::Context;
 using v8::HandleScope;
 using v8::Isolate;
 using v8::Locker;
-using v8::MaybeLocal;
 using v8::V8;
 using v8::Value;
 
@@ -1126,7 +1125,6 @@ NodeValue NodeContext_Call_Function(NodeContext *context, NodeValue function,
     v8::Local<v8::Value> *args_arr = new v8::Local<v8::Value>[args_length];
     for (size_t i = 0; i < args_length; i++) {
         auto v = to_v8_value(context, local_ctx, args[i]);
-        debugValue(v, context->isolate, local_ctx);
         args_arr[i] = v;
     }
 
