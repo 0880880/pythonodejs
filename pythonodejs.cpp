@@ -1136,13 +1136,16 @@ NodeValue NodeContext_Call_Function(NodeContext *context, NodeValue function,
         recv = ((Val *)function.parent)->value.Get(context->isolate);
     }
 
-    v8::Local<v8::Value> result =
+    v8::MaybeLocal<v8::Value> maybe_result =
         func->Call(local_ctx, // <— no Isolate* here
-                   recv, static_cast<int>(args_length), args_arr)
-            .ToLocalChecked();
+                   recv, static_cast<int>(args_length), args_arr);
     run_loop_blocking(context);
 
-    return to_node_value(context, local_ctx, result);
+    if (maybe_result.IsEmpty()) {
+        return {};
+    }
+
+    return to_node_value(context, local_ctx, maybe_result.ToLocalChecked());
 }
 
 void NodeContext_Define_Global(NodeContext *context, const char **keys,
