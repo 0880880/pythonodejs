@@ -94,8 +94,11 @@ _lib.NodeContext_Init.argtypes = [
     ctypes.c_int,
 ]
 
-_lib.NodeContext_Define_Global.restype = None
+_lib.NodeContext_SetCallback.restype = None
 _lib.NodeContext_SetCallback.argtypes = [ctypes.c_void_p, CALLBACK]
+
+_lib.NodeContext_SetFutureCallback.restype = None
+_lib.NodeContext_SetFutureCallback.argtypes = [ctypes.c_void_p, FUTURE_CALLBACK]
 
 _lib.NodeContext_Define_Global.restype = None
 _lib.NodeContext_Define_Global.argtypes = [
