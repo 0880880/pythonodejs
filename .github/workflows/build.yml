@@ -93,7 +93,7 @@ jobs:
             cp39-win32 cp39-win_arm64
             cp310-win32 cp310-win_arm64
             cp311-win32 cp311-win_arm64
-          CIBW_MANYLINUX_X86_64_IMAGE: quay.io/pypa/manylinux_28_x86_64:latest
+          CIBW_MANYLINUX_X86_64_IMAGE: quay.io/pypa/manylinux_2_28_x86_64:latest
           CIBW_MANYLINUX_AARCH64_IMAGE: quay.io/pypa/manylinux_2_34_aarch64:latest
         run: |
           pip install cibuildwheel
