@@ -1,7 +1,7 @@
 # setup.py
 import glob
 import os
-from setuptools import find_packages, setup, Extension
+from setuptools import setup, Extension
 from wheel.bdist_wheel import bdist_wheel as _bdist_wheel
 
 
@@ -25,8 +25,8 @@ ext = Extension(
 
 setup(
     name="pythonodejs",
-    version="1.3.6",
-    packages=find_packages(),
+    version="1.4.0",
+    packages=["node"],
     ext_modules=[ext],
     include_package_data=True,
     package_data={
