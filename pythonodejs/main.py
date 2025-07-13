@@ -528,11 +528,10 @@ def _to_node(node, value):  # TODO SYMBOL
             v.object_keys = n_keys
     elif callable(value):
         name_enc = value.__name__.encode("utf-8")
-        fun = _lib.NodeContext_Create_Function(node._context, name_enc)
+        fun = node._create_function(value)
         v.type = FUNCTION
         v.val_string = name_enc
         v.function = fun.function
-        node._python_funcs[value.__name__] = value
     else:
         v.type = STRING
         v.val_string = value.__str__().encode("utf-8")
@@ -753,6 +752,15 @@ class Node:
         error = _lib.NodeContext_Init(self._context, c_array, 0, thread_pool_size)
         if not error == 0:
             raise Exception("Failed to init node.")
+        
+    def _create_function(self, func):
+        if func in self._registered_functions or func.__name__ in self._python_funcs:
+            self._python_funcs[func.__name__] = func
+            return self._registered_functions[func]
+        self._python_funcs[func.__name__] = func
+        node_func = _lib.NodeContext_Create_Function(self._context, func.__name__.encode("utf-8"))
+        self._registered_functions[func] = node_func
+        return node_func
 
     def require(self, module: str):
         js_mod = self.eval(
@@ -786,7 +794,9 @@ class Node:
         )
 
     def run(self, fp: Union[str, Path]):
-        eval(Path(fp).read_text("utf-8"))
+        if isinstance(fp, str):
+            fp = Path(fp)
+        return eval(Path(fp).read_text("utf-8"))
 
     def stop(self):
         _lib.NodeContext_Stop(self._context)
@@ -800,3 +810,104 @@ class Node:
         self.stop()
         if not self.cleaned:
             self.dispose()
+
+
+_context = Node()
+
+
+def NodeRegister(func):
+    """
+    Registers a function in the node context with the same name.
+    """
+    global _context
+    if not isinstance(func, types.FunctionType):
+        raise TypeError("Cannot register non-function")
+    _context._create_function(func)
+    return func
+
+def require(module: str):
+    """
+    Requires a module in the node context and returns the module.
+    Note that the module must be available in the node context.
+
+    Args:
+        module (str): The name of the module to require.
+
+    Returns:
+        The module object from the node context.
+    """
+    global _context
+    _context.require(module)
+
+def define(vars: Union[dict, str], value: Any = None) -> None:
+    """
+    Defines a global variable in the node context. If the variable is a string,
+    it must be the name of the variable to define. If the variable is a
+    dictionary, it must contain a mapping of variable names to values to assign
+    to those variables. The value must be a Python object that can be
+    converted to a node value.
+
+    Args:
+        vars (Union[dict, str]): A string or dictionary containing the
+            variable(s) to define.
+        value (Any, optional): The value to assign to the variable, if
+            `vars` is a string. Defaults to None.
+
+    Returns:
+        None
+    """
+    global _context
+    _context.define(vars, value)
+
+def exec(code: str):
+    """
+    Evaluates the provided JavaScript code within the node context and returns
+    the result. The code is executed as if it were run in a JavaScript
+    environment, allowing for interaction with defined global variables and
+    functions.
+
+    Args:
+        code (str): The JavaScript code to evaluate.
+
+    Returns:
+        Any: The result of the evaluated code, converted to a Python equivalent.
+    """
+
+    global _context
+    return _context.eval(code)
+
+def run_file(fp: Union[str, Path]):
+    """
+    Runs the provided JavaScript file in the node context and returns the result.
+    The file is executed as if it were run in a JavaScript environment, allowing
+    for interaction with defined global variables and functions.
+
+    Args:
+        fp (Union[str, Path]): The path to the JavaScript file to run.
+
+    Returns:
+        Any: The result of the evaluated file, converted to a Python equivalent.
+    """
+    global _context
+    return _context.run(fp)
+
+def node_dispose():
+    """
+    Disposes of the node context. This stops the event loop and cleans up
+    any remaining resources.
+    """
+    global _context
+    _context.dispose()
+
+def node_stop():
+    """
+    Stops the node context event loop. This will allow the Python thread to exit
+    and will prevent any new callbacks from being scheduled. However, this will
+    not stop any currently running callbacks from completing, so the event loop
+    may not be stopped immediately.
+
+    Returns:
+        None
+    """
+    global _context
+    _context.stop()
