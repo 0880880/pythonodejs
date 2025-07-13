@@ -59,10 +59,10 @@ jobs:
 
       - name: Move necessery items to lib
         run: |
-          mkdir -p pythonodejs/externals
-          mv nodejs/deps/uv pythonodejs/externals/uv
-          mv nodejs/deps/v8 pythonodejs/externals/v8
-          mv nodejs/src pythonodejs/externals/node
+          mkdir -p node/externals
+          mv nodejs/deps/uv node/externals/uv
+          mv nodejs/deps/v8 node/externals/v8
+          mv nodejs/src node/externals/node
 
       - name: Build binary
         if: runner.os != 'Linux'
@@ -71,11 +71,11 @@ jobs:
       - name: Move libnode
         if: runner.os != 'Linux'
         shell: bash
-        run: mv pythonodejs/externals/libnode/* pythonodejs/lib/
+        run: mv node/externals/libnode/* node/lib/
 
       - name: Add rpath (macOS)
         if: runner.os == 'macOS'
-        run: install_name_tool -add_rpath pythonodejs/lib/ pythonodejs/lib/pythonodejs.dylib
+        run: install_name_tool -add_rpath node/lib/ node/lib/pythonodejs.dylib
 
       - name: Validate Build Environment
         if: runner.os != 'Linux'
