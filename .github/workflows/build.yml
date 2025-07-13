@@ -96,6 +96,7 @@ jobs:
           CIBW_MANYLINUX_X86_64_IMAGE: quay.io/pypa/manylinux_2_28_x86_64:latest
           CIBW_MANYLINUX_AARCH64_IMAGE: quay.io/pypa/manylinux_2_34_aarch64:latest
         run: |
+          pip install python-build>=2025.4.1
           pip install cibuildwheel
           cibuildwheel
           
