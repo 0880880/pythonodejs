@@ -20,17 +20,14 @@ pip install pythonodejs
 ## 🔍 Quick Example
 
 ```python
-from pythonodejs import Node
-
-# Initialize Node.js environment
-node = Node()
+from node import node_eval
 
 # Execute JavaScript directly
-node.eval("console.log('Hello from Node.js in Python!')")
+node_eval("console.log('Hello from Node.js in Python!')")
 # > Hello from Node.js in Python!
 
 # Create and return JavaScript functions
-read_file = node.eval("""
+read_file = node_eval("""
 const fs = require('fs');
 
 function readFile(filePath) {
@@ -56,18 +53,16 @@ npm install lodash express axios
 ```
 
 ```python
-from pythonodejs import Node
+from node import node_eval
 
-node = Node()
-
-result = node.eval("""
+result = node_eval("""
 const _ = require('lodash');
 const numbers = [1, 2, 3, 4, 5];
 _.sum(numbers);
 """)
 print(f"Sum: {result}")
 
-node.eval("""
+node_eval("""
 const express = require('express');
 const app = express();
 
@@ -86,7 +81,7 @@ app.listen(3000, () => {
 **Working with JS Objects**
 
 ```python
-person = node.eval("""
+person = node_eval("""
 const person = {
   name: 'John',
   age: 30,
@@ -103,7 +98,7 @@ print(person['greet']())
 **Passing Python → JS**
 
 ```python
-process_data = node.eval("""
+process_data = node_eval("""
 function processData(data) {
   return {
     processed: true,
