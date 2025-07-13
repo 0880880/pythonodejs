@@ -859,7 +859,7 @@ def define(vars: Union[dict, str], value: Any = None) -> None:
     global _context
     _context.define(vars, value)
 
-def exec(code: str):
+def node_eval(code: str):
     """
     Evaluates the provided JavaScript code within the node context and returns
     the result. The code is executed as if it were run in a JavaScript
@@ -876,7 +876,26 @@ def exec(code: str):
     global _context
     return _context.eval(code)
 
-def run_file(fp: Union[str, Path]):
+def js_eval(code: str):
+    """
+    Evaluates the provided JavaScript code within the node context and returns
+    the result. The code is executed as if it were run in a JavaScript
+    environment, allowing for interaction with defined global variables and
+    functions.
+
+    Same as node_eval.
+
+    Args:
+        code (str): The JavaScript code to evaluate.
+
+    Returns:
+        Any: The result of the evaluated code, converted to a Python equivalent.
+    """
+
+    global _context
+    return _context.eval(code)
+
+def node_run(fp: Union[str, Path]):
     """
     Runs the provided JavaScript file in the node context and returns the result.
     The file is executed as if it were run in a JavaScript environment, allowing
