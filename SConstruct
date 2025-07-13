@@ -64,7 +64,10 @@ if not any(lib_dir.iterdir()):
 else:
     print("lib directory is not empty.")
 
-is_debug = not os.getenv("CI") == "true" and not os.getenv("NO_DEBUG") == "true"
+is_debug = not os.getenv("CI") == "true" and os.getenv("DEBUG") == "true"
+
+if is_debug:
+    print("DEBUG=TRUE CI=FALSE")
 
 LDFLAGS = [
     f"-L{lib_dir.resolve()}",
