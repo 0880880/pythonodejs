@@ -86,6 +86,7 @@ jobs:
         env:
           MACOSX_DEPLOYMENT_TARGET: 14.0
           CIBW_ARCHS_LINUX: native
+          CIBW: cp39-* cp310-* cp311-*
           CIBW_SKIP: >-
             cp39-musllinux_x86_64 cp39-musllinux_i686 cp39-musllinux_aarch64
             cp310-musllinux_x86_64 cp310-musllinux_i686 cp310-musllinux_aarch64
