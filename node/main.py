@@ -752,13 +752,15 @@ class Node:
         error = _lib.NodeContext_Init(self._context, c_array, 0, thread_pool_size)
         if not error == 0:
             raise Exception("Failed to init node.")
-        
+
     def _create_function(self, func):
         if func in self._registered_functions or func.__name__ in self._python_funcs:
             self._python_funcs[func.__name__] = func
             return self._registered_functions[func]
         self._python_funcs[func.__name__] = func
-        node_func = _lib.NodeContext_Create_Function(self._context, func.__name__.encode("utf-8"))
+        node_func = _lib.NodeContext_Create_Function(
+            self._context, func.__name__.encode("utf-8")
+        )
         self._registered_functions[func] = node_func
         return node_func
 
@@ -825,6 +827,7 @@ def NodeRegister(func):
     _context._create_function(func)
     return func
 
+
 def require(module: str):
     """
     Requires a module in the node context and returns the module.
@@ -838,6 +841,7 @@ def require(module: str):
     """
     global _context
     _context.require(module)
+
 
 def define(vars: Union[dict, str], value: Any = None) -> None:
     """
@@ -859,6 +863,7 @@ def define(vars: Union[dict, str], value: Any = None) -> None:
     global _context
     _context.define(vars, value)
 
+
 def node_eval(code: str):
     """
     Evaluates the provided JavaScript code within the node context and returns
@@ -875,6 +880,7 @@ def node_eval(code: str):
 
     global _context
     return _context.eval(code)
+
 
 def js_eval(code: str):
     """
@@ -895,6 +901,7 @@ def js_eval(code: str):
     global _context
     return _context.eval(code)
 
+
 def node_run(fp: Union[str, Path]):
     """
     Runs the provided JavaScript file in the node context and returns the result.
@@ -910,6 +917,7 @@ def node_run(fp: Union[str, Path]):
     global _context
     return _context.run(fp)
 
+
 def node_dispose():
     """
     Disposes of the node context. This stops the event loop and cleans up
@@ -917,6 +925,7 @@ def node_dispose():
     """
     global _context
     _context.dispose()
+
 
 def node_stop():
     """
