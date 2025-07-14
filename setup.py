@@ -12,8 +12,8 @@ class bdist_wheel(_bdist_wheel):
 
 
 external_files = [
-    f.replace("node/", "", 1)
-    for f in glob.glob("node/external/**/*", recursive=True)
+    f.replace("pythonodejs/", "", 1)
+    for f in glob.glob("pythonodejs/external/**/*", recursive=True)
     if not f.endswith("/")
 ]
 
@@ -26,15 +26,15 @@ ext = Extension(
 setup(
     name="pythonodejs",
     version="1.4.2",
-    packages=["node"],
+    packages=["pythonodejs"],
     ext_modules=[ext],
     include_package_data=True,
     package_data={
-        "node": [
+        "pythonodejs": [
             *external_files,
             *[
                 f"lib/{f}"
-                for f in os.listdir("node/lib")
+                for f in os.listdir("pythonodejs/lib")
                 if not (f.endswith(".exp") or f.endswith(".pdb") or f.endswith(".ilk"))
             ],
         ]

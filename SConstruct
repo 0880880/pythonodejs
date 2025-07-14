@@ -50,9 +50,9 @@ ARC_EXT = "zip" if OS == "windows" else "tar.xz"
 
 libnode_url = f"https://github.com/0880880/libnode/releases/download/v23.11.0/libnode-{ARCH}-{LIBNODE_OS}.{ARC_EXT}"
 
-pythonode_path = Path("./node")
+pythonode_path = Path("./pythonodejs")
 
-lib_dir = Path("./node/externals/libnode")
+lib_dir = Path("./pythonodejs/externals/libnode")
 lib_dir.mkdir(exist_ok=True, parents=True)
 
 print(f'Downloading libnode from "{libnode_url}"')
@@ -101,9 +101,9 @@ if OS == "windows":
     CXXFLAGS.remove("-fPIC")
 
 INCLUDES = [
-    "./node/externals/node",
-    "./node/externals/v8/include",
-    "./node/externals/uv/include",
+    "./pythonodejs/externals/node",
+    "./pythonodejs/externals/v8/include",
+    "./pythonodejs/externals/uv/include",
 ]
 
 

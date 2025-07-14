@@ -7,9 +7,6 @@ license = {file = "LICENSE"}
 authors = [{name = "0880880"}]
 dependencies = []
 
-[tools.setuptools]
-packages = ["node"]
-
 [build-system]
 requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"

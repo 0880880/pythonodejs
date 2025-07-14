@@ -20,7 +20,7 @@ pip install pythonodejs
 ## 🔍 Quick Example
 
 ```python
-from node import node_eval
+from pythonodejs import node_eval
 
 # Execute JavaScript directly
 node_eval("console.log('Hello from Node.js in Python!')")
@@ -53,7 +53,7 @@ npm install lodash express axios
 ```
 
 ```python
-from node import node_eval
+from pythonodejs import node_eval
 
 result = node_eval("""
 const _ = require('lodash');

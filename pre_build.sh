@@ -34,7 +34,7 @@ if [[ "$(uname)" == "Linux" ]]; then
     scons
 
     echo "📂 Moving libnode files..."
-    mv node/externals/libnode/* node/lib/
+    mv pythonodejs/externals/libnode/* pythonodejs/lib/
 
     echo "🔧 Running Linux-specific library fixes..."
     python ./fix_linux_libs.py
