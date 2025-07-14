@@ -71,11 +71,11 @@ jobs:
       - name: Move libnode
         if: runner.os != 'Linux'
         shell: bash
-        run: mv node/externals/libnode/* node/lib/
+        run: mv pythonodejs/externals/libnode/* pythonodejs/lib/
 
       - name: Add rpath (macOS)
         if: runner.os == 'macOS'
-        run: install_name_tool -add_rpath node/lib/ node/lib/pythonodejs.dylib
+        run: install_name_tool -add_rpath pythonodejs/lib/ pythonodejs/lib/pythonodejs.dylib
 
       - name: Validate Build Environment
         if: runner.os != 'Linux'
