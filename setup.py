@@ -30,7 +30,7 @@ setup(
     ext_modules=[ext],
     include_package_data=True,
     package_data={
-        "pythonodejs": [
+        "node": [
             *external_files,
             *[
                 f"lib/{f}"
