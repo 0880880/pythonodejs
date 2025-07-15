@@ -804,14 +804,11 @@ class Node:
         _lib.NodeContext_Stop(self._context)
 
     def dispose(self):
+        if self.cleaned:
+            return
         self.cleaned = True
         self.stop()
         _lib.NodeContext_Dispose(self._context)
-
-    def __del__(self):
-        self.stop()
-        if not self.cleaned:
-            self.dispose()
 
 
 _context = Node()
