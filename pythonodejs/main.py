@@ -410,7 +410,7 @@ def _to_node(node, value):  # TODO SYMBOL
         v.type = NULL_T
     elif isinstance(value, bool):
         v.type = BOOLEAN_T
-        v.val_bool = 1 if value else 0
+        v.val_bool = bool(value)
     elif isinstance(value, int):
         v.type = NUMBER
         v.val_num = value
@@ -440,7 +440,7 @@ def _to_node(node, value):  # TODO SYMBOL
             flags |= 1 << 4  # kUnicode
         if value.flags & re.DOTALL:
             flags |= 1 << 5  # kDotAll
-        v.val_regex_flags = pflags
+        v.val_regex_flags = flags
     elif isinstance(value, Coroutine):
         v.type = PROMISE
         cid = random_int64()
