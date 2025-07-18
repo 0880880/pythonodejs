@@ -25,7 +25,7 @@ ext = Extension(
 
 setup(
     name="pythonodejs",
-    version="1.4.5",
+    version="1.4.6",
     packages=["pythonodejs"],
     ext_modules=[ext],
     include_package_data=True,

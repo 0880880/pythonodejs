@@ -697,6 +697,7 @@ class Node:
         self.cleaned = False
         self._context = _lib.NodeContext_Create()
         self._python_funcs = {}
+        self._registered_functions = {}
         self._promises = {}
 
         argc = 1
