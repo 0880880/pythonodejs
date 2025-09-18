@@ -1,15 +1,4 @@
-include pythonodejs/lib/*.lib
-include pythonodejs/lib/*.dll
-include pythonodejs/lib/*.so
-include pythonodejs/lib/*.dylib
-include pythonodejs/lib/*.a
-include pythonodejs/lib/*.o
-include pythonodejs/lib/*.sl
-include pythonodejs/lib/*.bundle
-
-exclude pythonodejs/lib/*.pdb
-exclude pythonodejs/lib/*.exp
-exclude pythonodejs/lib/*.ilk
-exclude pythonodejs/lib/*.131.dylib
-exclude pythonodejs/lib/*.131.so
-exclude pythonodejs/lib/*.so.131
+include LICENSE
+include README.md
+recursive-include include *
+recursive-include libs *

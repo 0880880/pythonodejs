@@ -1,44 +1,46 @@
-# setup.py
-import glob
-import os
 from setuptools import setup, Extension
-from wheel.bdist_wheel import bdist_wheel as _bdist_wheel
+from setuptools.command.build_ext import build_ext
+import os
+import sys
+import glob
 
+ext_name = "pythonodejs"  # adjust if you want a specific name
 
-class bdist_wheel(_bdist_wheel):
-    def finalize_options(self):
-        super().finalize_options()
-        self.root_is_pure = False
-
-
-external_files = [
-    f.replace("pythonodejs/", "", 1)
-    for f in glob.glob("pythonodejs/external/**/*", recursive=True)
-    if not f.endswith("/")
+include_dirs = [
+    os.path.join(os.getcwd(), "include", "node", "src"),
+    os.path.join(os.getcwd(), "include", "node", "deps", "v8", "include"),
+    os.path.join(os.getcwd(), "include", "node", "deps", "uv", "include"),
 ]
 
-ext = Extension(
-    "pythonodejs",
-    sources=["src/binding.cpp"],
-    language="c++",
-)
+library_dirs = [
+    os.path.join(os.getcwd(), "libs", "libnode", "lib"),
+]
+
+extra_compile_args = ["-std=c++17", "-DNODE_WANT_INTERNALS=1", "-fPIC"]
+extra_link_args = []
+
+# On Linux attempt to add rpath so the built wheel will find libnode at runtime if bundled
+if sys.platform.startswith("linux"):
+    extra_link_args += ["-Wl,-rpath,$ORIGIN/libs/libnode/lib"]
+
+sources = ["pythonodejs/pythonodejs.cpp"]
+
+ext_modules = [
+    Extension(
+        ext_name,
+        sources=sources,
+        include_dirs=include_dirs,
+        library_dirs=library_dirs,
+        libraries=["node"],
+        extra_compile_args=extra_compile_args,
+        extra_link_args=extra_link_args,
+        language="c++",
+    )
+]
 
 setup(
     name="pythonodejs",
-    version="1.4.7",
-    packages=["pythonodejs"],
-    ext_modules=[ext],
-    include_package_data=True,
-    package_data={
-        "pythonodejs": [
-            *external_files,
-            *[
-                f"lib/{f}"
-                for f in os.listdir("pythonodejs/lib")
-                if not (f.endswith(".exp") or f.endswith(".pdb") or f.endswith(".ilk"))
-            ],
-        ]
-    },
-    zip_safe=False,
-    cmdclass={"bdist_wheel": bdist_wheel},
+    version="1.0.0",
+    description="Pythonodejs NodeJS Interop",
+    ext_modules=ext_modules,
 )

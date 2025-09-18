@@ -1,0 +1,22 @@
+[
+  {
+    "arguments": [
+      "/usr/bin/clang++",
+      "-c",
+      "-std=c++20",
+      "-DNODE_WANT_INTERNALS=1",
+      "-fPIC",
+      "-Iinclude/node/src",
+      "-Iinclude/node/deps/v8/include",
+      "-Iinclude/node/deps/uv/include",
+      "-I/home/aria/miniconda3/include/python3.12",
+      "-I/home/aria/miniconda3/include/python3.12",
+      "-o",
+      "node.cpython-312-x86_64-linux-gnu.so",
+      "node.cpp"
+    ],
+    "directory": "/mnt/o/GH/pythonodejs",
+    "file": "/mnt/o/GH/pythonodejs/node.cpp",
+    "output": "/mnt/o/GH/pythonodejs/node.cpython-312-x86_64-linux-gnu.so"
+  }
+]
