@@ -28,9 +28,7 @@ jobs:
       - name: Build wheels with cibuildwheel (manylinux container will run build hook)
         env:
           CIBW_PLATFORM: "linux"
-          # run our Node build script inside the manylinux docker build environment;
-          # /io is where the project is mounted inside the manylinux image
-          CIBW_BEFORE_BUILD: "bash /io/scripts/build_node.sh linux && ls -R /io/libs/libnode && ls -R /io/include"
+          CIBW_BEFORE_BUILD: "bash scripts/build_node.sh linux && ls -R /io/libs/libnode && ls -R /io/include"
           # ensure cibuildwheel produces wheels for supported pythons (adjust if needed)
           CIBW_BUILD: "cp310-* cp311-* cp312-*"
           # Optionally choose manylinux image (override if you need)
@@ -72,7 +70,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install build tools
         run: |
-          choco install -y python visualstudio2019-buildtools curl
+          choco install -y python visualstudio2022buildtools curl
+          choco install -y visualstudio2022-workload-nodebuildtools
       - name: Build libnode (Windows host - MSVC)
         run: |
           bash -lc "bash scripts/build_node.sh windows"
