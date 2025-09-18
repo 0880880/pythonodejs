@@ -31,7 +31,7 @@ if [ ! -d "node-v${NODE_VERSION}" ]; then
 fi
 cd "node-v${NODE_VERSION}"
 # Before building, patch cares
-sed -i 's|#  include <sys/random.h>|#  if defined(__linux__)\n#    include <unistd.h>\n#    include <sys/types.h>\n#  else\n#    include <sys/random.h>\n#  endif|' deps/cares/src/lib/util/ares_rand.c
+sed -i '' $'s|#  include <sys/random.h>|#  if defined(__linux__)\n#    include <unistd.h>\n#    include <sys/types.h>\n#  else\n#    include <sys/random.h>\n#  endif|' deps/cares/src/lib/util/ares_rand.c
 
 
 # Prepare configure flags (platform-specific tweaks)
@@ -41,7 +41,7 @@ if [ "$PLATFORM" = "windows" ]; then
   echo "Windows build: using msbuild / Visual Studio toolchain (requires preinstalled tools)"
   # Node's Windows build flow uses vcbuild.bat; run it via bash wrapper if provided
   # We'll use a generic approach: let Node's build system detect env
-  python3 ./configure --prefix="${INSTALL_DIR}"
+  python3 ./configure --prefix="${INSTALL_DIR}" --openssl-no-asm
   # use built-in msbuild script (vcbuild). Fallback to `python tools\msvs\...` if needed.
   # For simplicity attempt `make` (MSYS2) or `vcbuild` if present.
   if [ -f "vcbuild.bat" ]; then
