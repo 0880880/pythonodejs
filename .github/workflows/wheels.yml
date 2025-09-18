@@ -2,7 +2,7 @@ name: Build wheels
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, rewrite-cpython ]
   pull_request:
 
 env:
