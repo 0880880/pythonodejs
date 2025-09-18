@@ -35,7 +35,7 @@ jobs:
           CIBW_BUILD: "cp310-* cp311-* cp312-*"
           # Optionally choose manylinux image (override if you need)
           CIBW_MANYLINUX_X86_64_IMAGE: "manylinux2014"
-        uses: pypa/cibuildwheel@v3
+        uses: pypa/cibuildwheel@v3.0.0
         with:
           output-dir: wheelhouse
 
@@ -61,7 +61,7 @@ jobs:
         env:
           CIBW_PLATFORM: "macos"
           CIBW_BUILD: "cp310-* cp311-* cp312-*"
-        uses: pypa/cibuildwheel@v3
+        uses: pypa/cibuildwheel@v3.0.0
         with:
           output-dir: wheelhouse
 
@@ -84,6 +84,6 @@ jobs:
         env:
           CIBW_PLATFORM: "windows"
           CIBW_BUILD: "cp310-* cp311-* cp312-*"
-        uses: pypa/cibuildwheel@v3
+        uses: pypa/cibuildwheel@v3.0.0
         with:
           output-dir: wheelhouse
