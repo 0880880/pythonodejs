@@ -30,6 +30,9 @@ if [ ! -d "node-v${NODE_VERSION}" ]; then
   tar xf "${TARBALL}"
 fi
 cd "node-v${NODE_VERSION}"
+# Before building, patch cares
+sed -i 's|#  include <sys/random.h>|#  if defined(__linux__)\n#    include <unistd.h>\n#    include <sys/types.h>\n#  else\n#    include <sys/random.h>\n#  endif|' deps/cares/src/lib/util/ares_rand.c
+
 
 # Prepare configure flags (platform-specific tweaks)
 CONFIGURE_OPTS=(--prefix="${INSTALL_DIR}" --fully-static)

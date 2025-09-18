@@ -70,7 +70,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install build tools
         run: |
-          choco install -y python visualstudio2022buildtools curl
+          choco install -y python visualstudio2022buildtools curl nasm
           choco install -y visualstudio2022-workload-nodebuildtools
       - name: Build libnode (Windows host - MSVC)
         run: |
