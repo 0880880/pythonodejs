@@ -1,0 +1,3 @@
+[submodule "include/node"]
+	path = include/node
+	url = https://github.com/nodejs/node.git
