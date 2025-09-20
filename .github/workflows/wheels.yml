@@ -37,6 +37,11 @@ jobs:
         uses: pypa/cibuildwheel@v3.0.0
         with:
           output-dir: wheelhouse
+      - name: Upload wheels (Linux)
+        uses: actions/upload-artifact@v3
+        with:
+          name: wheels-linux
+          path: wheelhouse/*.whl
 
   build-macos:
     name: Build macOS wheels
@@ -63,6 +68,12 @@ jobs:
         uses: pypa/cibuildwheel@v3.0.0
         with:
           output-dir: wheelhouse
+      - name: Upload wheels (macOS)
+        uses: actions/upload-artifact@v3
+        with:
+          name: wheels-macos
+          path: wheelhouse/*.whl
+
 
   build-windows:
     name: Build Windows wheels
@@ -87,3 +98,9 @@ jobs:
         uses: pypa/cibuildwheel@v3.0.0
         with:
           output-dir: wheelhouse
+      - name: Upload wheels (Windows)
+        uses: actions/upload-artifact@v3
+        with:
+          name: wheels-windows
+          path: wheelhouse/*.whl
+
