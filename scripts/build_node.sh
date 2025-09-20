@@ -20,15 +20,6 @@ export INSTALL_DIR="${PROJECT_ROOT}/libs/libnode"
 
 mkdir -p "${BUILD_DIR}" "${INSTALL_DIR}"
 
-echo "-Test-"
-echo "PROJECT_ROOT=${PROJECT_ROOT}"
-ls ${PROJECT_ROOT}
-echo "BUILD_DIR=${BUILD_DIR}"
-ls ${BUILD_DIR}
-echo "/project"
-ls /project
-echo "-Test-"
-
 echo "Building Node ${NODE_VERSION} for platform=${PLATFORM}"
 cd "${BUILD_DIR}"
 
