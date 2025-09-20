@@ -79,7 +79,7 @@ ls -la "${INSTALL_DIR}" || true
 mkdir -p "${PROJECT_ROOT}/include"
 
 # Cross-platform, rsync-like copy implemented in Python (works on GHA runners)
-python3 - <<'PY' INSTALL_DIR="${INSTALL_DIR}" PROJECT_ROOT="${PROJECT_ROOT}"
+INSTALL_DIR="${INSTALL_DIR}" PROJECT_ROOT="${PROJECT_ROOT}" python3 - <<'PY'
 import os, shutil, filecmp, sys
 
 INSTALL_DIR = os.environ.get('INSTALL_DIR')
