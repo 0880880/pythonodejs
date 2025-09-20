@@ -64,7 +64,7 @@ if [ "$PLATFORM" = "windows" ]; then
 else
   # Linux / macOS: normal configure & make
   echo "Configuring Node..."
-  ./configure "${CONFIGURE_OPTS[@]}"
+  ./configure --prefix="${INSTALL_DIR}"
   echo "Running make -j"
   make -j$(nproc) || make -j2
   make install
