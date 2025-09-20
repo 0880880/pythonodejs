@@ -79,8 +79,14 @@ ls -la "${INSTALL_DIR}" || true
 mkdir -p "${PROJECT_ROOT}/include"
 
 # Cross-platform, rsync-like copy implemented in Python (works on GHA runners)
-python - <<'PY'
+python3 - <<'PY' INSTALL_DIR="${INSTALL_DIR}" PROJECT_ROOT="${PROJECT_ROOT}"
 import os, shutil, filecmp, sys
+
+INSTALL_DIR = os.environ.get('INSTALL_DIR')
+PROJECT_ROOT = os.environ.get('PROJECT_ROOT')
+if not INSTALL_DIR or not PROJECT_ROOT:
+    print("INSTALL_DIR and PROJECT_ROOT must be set", file=sys.stderr)
+    sys.exit(2)
 
 def copy_if_changed(src, dst):
     if os.path.islink(src):
@@ -95,7 +101,6 @@ def copy_if_changed(src, dst):
                     os.remove(dst)
             os.symlink(target, dst)
         except Exception:
-            # fallback: copy link target or the link file itself
             try:
                 tgt = target if os.path.isabs(target) else os.path.join(os.path.dirname(src), target)
                 shutil.copy2(tgt, dst)
@@ -118,43 +123,28 @@ def copy_if_changed(src, dst):
                 pass
         shutil.copy2(src, dst)
 
-INSTALL_DIR = os.environ.get('INSTALL_DIR')
-PROJECT_ROOT = os.environ.get('PROJECT_ROOT')
-if not INSTALL_DIR or not PROJECT_ROOT:
-    print("INSTALL_DIR and PROJECT_ROOT must be set", file=sys.stderr)
-    sys.exit(2)
+# include
+src = os.path.join(INSTALL_DIR, 'include')
+dst = os.path.join(PROJECT_ROOT, 'include')
+if os.path.isdir(src):
+    copy_if_changed(src, dst)
+else:
+    print("No include/ to copy (OK).")
 
-# include (fail on error)
-try:
-    src = os.path.join(INSTALL_DIR, 'include')
-    dst = os.path.join(PROJECT_ROOT, 'include')
-    if os.path.isdir(src):
-        copy_if_changed(src, dst)
-    else:
-        print("No include/ to copy (OK).")
-except Exception as e:
-    print("ERROR copying include:", e, file=sys.stderr)
-    sys.exit(1)
+# libs
+lib_src = os.path.join(INSTALL_DIR, 'lib')
+lib_dst = os.path.join(PROJECT_ROOT, 'libs', 'libnode', 'lib')
+if os.path.isdir(lib_src):
+    copy_if_changed(lib_src, lib_dst)
 
-# libs (fail on error)
-try:
-    lib_src = os.path.join(INSTALL_DIR, 'lib')
-    lib_dst = os.path.join(PROJECT_ROOT, 'libs', 'libnode', 'lib')
-    if os.path.isdir(lib_src):
-        copy_if_changed(lib_src, lib_dst)
-except Exception as e:
-    print("ERROR copying lib:", e, file=sys.stderr)
-    sys.exit(1)
-
-# bin (keep original behavior: ignore errors)
-try:
-    bin_src = os.path.join(INSTALL_DIR, 'bin')
-    bin_dst = os.path.join(PROJECT_ROOT, 'libs', 'libnode', 'bin')
-    if os.path.isdir(bin_src):
+# bin (ignore errors)
+bin_src = os.path.join(INSTALL_DIR, 'bin')
+bin_dst = os.path.join(PROJECT_ROOT, 'libs', 'libnode', 'bin')
+if os.path.isdir(bin_src):
+    try:
         copy_if_changed(bin_src, bin_dst)
-except Exception as e:
-    print("WARN copying bin (ignored):", e, file=sys.stderr)
-
+    except Exception as e:
+        print("WARN copying bin (ignored):", e, file=sys.stderr)
 PY
 
 echo "Finished building Node and staging includes/libs into project."
