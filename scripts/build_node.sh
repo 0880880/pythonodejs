@@ -48,7 +48,7 @@ if [ "$PLATFORM" = "windows" ]; then
   echo "Windows build: using msbuild / Visual Studio toolchain (requires preinstalled tools)"
   # Node's Windows build flow uses vcbuild.bat; run it via bash wrapper if provided
   # We'll use a generic approach: let Node's build system detect env
-  python3 ./configure --prefix="${INSTALL_DIR}" --openssl-no-asm
+  python3 ./configure "${CONFIGURE_OPTS[@]}" --openssl-no-asm
   # use built-in msbuild script (vcbuild). Fallback to `python tools\msvs\...` if needed.
   # For simplicity attempt `make` (MSYS2) or `vcbuild` if present.
   if [ -f "vcbuild.bat" ]; then
@@ -64,7 +64,7 @@ if [ "$PLATFORM" = "windows" ]; then
 else
   # Linux / macOS: normal configure & make
   echo "Configuring Node..."
-  ./configure --prefix="${INSTALL_DIR}"
+  ./configure "${CONFIGURE_OPTS[@]}"
   echo "Running make -j"
   make -j$(nproc) || make -j2
   make install
