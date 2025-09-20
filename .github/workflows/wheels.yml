@@ -24,7 +24,7 @@ jobs:
       - name: Install minimal host deps
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential python3-dev curl pkg-config autoconf libtool automake
+          sudo apt-get install -y build-essential python3-dev curl pkg-config autoconf libtool automake rsync
       - name: Build wheels with cibuildwheel (manylinux container will run build hook)
         env:
           CIBW_ENVIRONMENT_LINUX: "CARES_USE_DEV_URANDOM=1"
@@ -48,7 +48,7 @@ jobs:
           # ensure build-essential equivalents and curl
           /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" || true
           brew update || true
-          brew install python3 cmake pkg-config || true
+          brew install python3 cmake pkg-config rsync || true
       - name: Build libnode (macOS host)
         run: |
           bash scripts/build_node.sh macos
