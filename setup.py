@@ -16,7 +16,7 @@ library_dirs = [
     os.path.join(os.getcwd(), "libs", "libnode", "lib"),
 ]
 
-extra_compile_args = ["-std=c++17", "-DNODE_WANT_INTERNALS=1", "-fPIC"]
+extra_compile_args = ["-std=c++20", "-DNODE_WANT_INTERNALS=1", "-fPIC"]
 extra_link_args = []
 
 # On Linux attempt to add rpath so the built wheel will find libnode at runtime if bundled
