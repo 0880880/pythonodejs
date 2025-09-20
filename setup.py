@@ -18,7 +18,7 @@ library_dirs = [
 
 extra_compile_args = ["-DNODE_WANT_INTERNALS=1"]
 if sys.platform.startswith("win"):
-    extra_compile_args.append("/std:c++20")
+    extra_compile_args += ["/std:c++20", "/Zc:__cplusplus"]
 else:
     extra_compile_args += ["-std=c++20", "-fPIC"]
 
