@@ -32,10 +32,9 @@ jobs:
           CIBW_ENVIRONMENT_LINUX: "CARES_USE_DEV_URANDOM=1"
           CIBW_PLATFORM: "linux"
           CIBW_BEFORE_BUILD: "bash scripts/build_node.sh linux && ls -R /io/libs/libnode && ls -R /io/include"
-          # ensure cibuildwheel produces wheels for supported pythons (adjust if needed)
           CIBW_BUILD: "cp310-* cp311-* cp312-*"
-          # Optionally choose manylinux image (override if you need)
-          CIBW_MANYLINUX_X86_64_IMAGE: "manylinux2014"
+          # CIBW_MANYLINUX_X86_64_IMAGE: "manylinux2014"
+          CIBW_MANYLINUX_X86_64_IMAGE: "manylinux_2_28"
         uses: pypa/cibuildwheel@v3.0.0
         with:
           output-dir: wheelhouse
