@@ -104,11 +104,11 @@ if [[ "${PLATFORM}" = "windows" ]] || [[ "$(uname -s 2>/dev/null || true)" =~ (M
 
   # Prefer rsync if available (but convert paths first)
   if command -v rsync >/dev/null 2>&1; then
-    SRC="$(convert_path_for_rsync "${INSTALL_DIR}/include/")"
-    DST="$(convert_path_for_rsync "${PROJECT_ROOT}/include/")"
+    SRC="${INSTALL_DIR}/include/"
+    DST="${PROJECT_ROOT}/include/"
     mkdir -p "${PROJECT_ROOT}/include"
     echo "rsync $SRC -> $DST"
-    rsync -a "$SRC" "$DST"
+    rsync -av "$SRC" "$DST"
   elif command -v robocopy >/dev/null 2>&1; then
     echo "Using robocopy fallback"
     # robocopy takes source_dir target_dir [file ...] /E to mirror dirs
