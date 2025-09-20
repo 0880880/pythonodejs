@@ -78,82 +78,83 @@ ls -la "${INSTALL_DIR}" || true
 # Copy headers into project-level include/ tree so setup.py can find them
 mkdir -p "${PROJECT_ROOT}/include"
 
-# Copy libs (shared/static) into project libs so wheel can bundle them
-mkdir -p "${PROJECT_ROOT}/libs/libnode/lib"
+# Cross-platform, rsync-like copy implemented in Python (works on GHA runners)
+python - <<'PY'
+import os, shutil, filecmp, sys
 
-# Helper: convert Windows MSYS/Cygwin paths to Unix-style for rsync if possible
-convert_path_for_rsync() {
-  local p="$1"
-  if command -v cygpath >/dev/null 2>&1; then
-    cygpath -u "$p"
-  else
-    # If no cygpath, try a naive conversion of "C:\..." to "/c/..."
-    # Works in Git Bash / MSYS when /c/ exists; safe fallback.
-    if [[ "$p" =~ ^([A-Za-z]):\\(.*) ]]; then
-      local drive="$(echo "${BASH_REMATCH[1]}" | tr '[:upper:]' '[:lower:]')"
-      local rest="$(echo "${BASH_REMATCH[2]}" | sed 's#\\#/#g')"
-      echo "/${drive}/${rest}"
-    else
-      printf '%s\n' "$p"
-    fi
-  fi
-}
+def copy_if_changed(src, dst):
+    if os.path.islink(src):
+        target = os.readlink(src)
+        try:
+            if os.path.lexists(dst) and os.path.islink(dst) and os.readlink(dst) == target:
+                return
+            if os.path.lexists(dst):
+                if os.path.isdir(dst) and not os.path.islink(dst):
+                    shutil.rmtree(dst)
+                else:
+                    os.remove(dst)
+            os.symlink(target, dst)
+        except Exception:
+            # fallback: copy link target or the link file itself
+            try:
+                tgt = target if os.path.isabs(target) else os.path.join(os.path.dirname(src), target)
+                shutil.copy2(tgt, dst)
+            except Exception:
+                shutil.copy2(src, dst)
+    elif os.path.isdir(src):
+        os.makedirs(dst, exist_ok=True)
+        try:
+            shutil.copystat(src, dst, follow_symlinks=False)
+        except Exception:
+            pass
+        for name in os.listdir(src):
+            copy_if_changed(os.path.join(src, name), os.path.join(dst, name))
+    else:
+        if os.path.exists(dst):
+            try:
+                if filecmp.cmp(src, dst, shallow=False):
+                    return
+            except Exception:
+                pass
+        shutil.copy2(src, dst)
 
-if [[ "${PLATFORM}" = "windows" ]] || [[ "$(uname -s 2>/dev/null || true)" =~ (MINGW|MSYS|CYGWIN) ]]; then
-  echo "Staging files on Windows/MinGW environment"
+INSTALL_DIR = os.environ.get('INSTALL_DIR')
+PROJECT_ROOT = os.environ.get('PROJECT_ROOT')
+if not INSTALL_DIR or not PROJECT_ROOT:
+    print("INSTALL_DIR and PROJECT_ROOT must be set", file=sys.stderr)
+    sys.exit(2)
 
-  # Prefer rsync if available (but convert paths first)
-  if command -v rsync >/dev/null 2>&1; then
-    SRC="${INSTALL_DIR}/include/"
-    DST="${PROJECT_ROOT}/include/"
-    mkdir -p "${PROJECT_ROOT}/include"
-    echo "rsync $SRC -> $DST"
-    rsync -av "$SRC" "$DST"
-  elif command -v robocopy >/dev/null 2>&1; then
-    echo "Using robocopy fallback"
-    # robocopy takes source_dir target_dir [file ...] /E to mirror dirs
-    robocopy "${INSTALL_DIR}/include" "${PROJECT_ROOT}/include" /E || true
-  else
-    echo "Using cp fallback"
-    cp -r "${INSTALL_DIR}/include/." "${PROJECT_ROOT}/include/" || true
-  fi
+# include (fail on error)
+try:
+    src = os.path.join(INSTALL_DIR, 'include')
+    dst = os.path.join(PROJECT_ROOT, 'include')
+    if os.path.isdir(src):
+        copy_if_changed(src, dst)
+    else:
+        print("No include/ to copy (OK).")
+except Exception as e:
+    print("ERROR copying include:", e, file=sys.stderr)
+    sys.exit(1)
 
-  # libs/bin
-  if [ -d "${INSTALL_DIR}/lib" ]; then
-    if command -v rsync >/dev/null 2>&1; then
-      SRC="$(convert_path_for_rsync "${INSTALL_DIR}/lib/")"
-      DST="$(convert_path_for_rsync "${PROJECT_ROOT}/libs/libnode/lib/")"
-      mkdir -p "${PROJECT_ROOT}/libs/libnode/lib"
-      rsync -a "$SRC" "$DST"
-    else
-      mkdir -p "${PROJECT_ROOT}/libs/libnode/lib"
-      cp -r "${INSTALL_DIR}/lib/." "${PROJECT_ROOT}/libs/libnode/lib/" || true
-    fi
-  fi
+# libs (fail on error)
+try:
+    lib_src = os.path.join(INSTALL_DIR, 'lib')
+    lib_dst = os.path.join(PROJECT_ROOT, 'libs', 'libnode', 'lib')
+    if os.path.isdir(lib_src):
+        copy_if_changed(lib_src, lib_dst)
+except Exception as e:
+    print("ERROR copying lib:", e, file=sys.stderr)
+    sys.exit(1)
 
-  if [ -d "${INSTALL_DIR}/bin" ]; then
-    if command -v rsync >/dev/null 2>&1; then
-      SRC="$(convert_path_for_rsync "${INSTALL_DIR}/bin/")"
-      DST="$(convert_path_for_rsync "${PROJECT_ROOT}/libs/libnode/bin/")"
-      mkdir -p "${PROJECT_ROOT}/libs/libnode/bin"
-      rsync -a "$SRC" "$DST" || true
-    else
-      mkdir -p "${PROJECT_ROOT}/libs/libnode/bin"
-      cp -r "${INSTALL_DIR}/bin/." "${PROJECT_ROOT}/libs/libnode/bin/" || true
-    fi
-  fi
+# bin (keep original behavior: ignore errors)
+try:
+    bin_src = os.path.join(INSTALL_DIR, 'bin')
+    bin_dst = os.path.join(PROJECT_ROOT, 'libs', 'libnode', 'bin')
+    if os.path.isdir(bin_src):
+        copy_if_changed(bin_src, bin_dst)
+except Exception as e:
+    print("WARN copying bin (ignored):", e, file=sys.stderr)
 
-else
-  # POSIX (Linux / macOS) — original rsync usage
-  rsync -a "${INSTALL_DIR}/include/" "${PROJECT_ROOT}/include/"
-
-  mkdir -p "${PROJECT_ROOT}/libs/libnode/lib"
-  if [ -d "${INSTALL_DIR}/lib" ]; then
-    rsync -a "${INSTALL_DIR}/lib/" "${PROJECT_ROOT}/libs/libnode/lib/"
-  fi
-  if [ -d "${INSTALL_DIR}/bin" ]; then
-    rsync -a "${INSTALL_DIR}/bin/" "${PROJECT_ROOT}/libs/libnode/bin/" || true
-  fi
-fi
+PY
 
 echo "Finished building Node and staging includes/libs into project."
