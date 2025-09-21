@@ -148,3 +148,12 @@ if os.path.isdir(bin_src):
 PY
 
 echo "Finished building Node and staging includes/libs into project."
+
+echo "Test libs"
+echo "/project/"
+ls /project
+echo "/project/libs"
+ls /project/libs
+echo "/project/libs/libnode"
+ls /project/libs/libnode
+echo "Test libs"
