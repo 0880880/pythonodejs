@@ -724,16 +724,43 @@ static PyMethodDef NodeJS_methods[] = {
 
 // 5. Type object
 static PyTypeObject NodeJSType = {
-    PyVarObject_HEAD_INIT(NULL, 0)
-        .tp_name
-    = "pythonodejs.NodeJS",
-    .tp_basicsize = sizeof(NodeJSObject),
-    .tp_flags = Py_TPFLAGS_DEFAULT,
-    .tp_new = PyType_GenericNew,
-    .tp_init = (initproc)NodeJS_init,
-    .tp_dealloc = (destructor)NodeJS_dealloc,
-    .tp_methods = NodeJS_methods,
-    .tp_repr = (reprfunc)NodeJS_repr,
+    PyVarObject_HEAD_INIT(NULL, 0) "pythonodejs.NodeJS", // tp_name
+    sizeof(NodeJSObject), // tp_basicsize
+    0, // tp_itemsize
+    (destructor)NodeJS_dealloc, // tp_dealloc
+    0, // tp_vectorcall_offset / tp_print (depending on Python version)
+    0, // tp_getattr
+    0, // tp_setattr
+    0, // tp_as_async
+    (reprfunc)NodeJS_repr, // tp_repr
+    0, // tp_as_number
+    0, // tp_as_sequence
+    0, // tp_as_mapping
+    0, // tp_hash
+    0, // tp_call
+    0, // tp_str
+    0, // tp_getattro
+    0, // tp_setattro
+    0, // tp_as_buffer
+    Py_TPFLAGS_DEFAULT, // tp_flags
+    0, // tp_doc
+    0, // tp_traverse
+    0, // tp_clear
+    0, // tp_richcompare
+    0, // tp_weaklistoffset
+    0, // tp_iter
+    0, // tp_iternext
+    NodeJS_methods, // tp_methods
+    0, // tp_members
+    0, // tp_getset
+    0, // tp_base
+    0, // tp_dict
+    0, // tp_descr_get
+    0, // tp_descr_set
+    0, // tp_dictoffset
+    (initproc)NodeJS_init, // tp_init
+    0, // tp_alloc
+    PyType_GenericNew, // tp_new
 };
 
 static PyMethodDef LibMethods[] = {
