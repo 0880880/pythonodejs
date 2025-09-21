@@ -156,4 +156,6 @@ echo "/project/libs"
 ls /project/libs
 echo "/project/libs/libnode"
 ls /project/libs/libnode
+echo "/project/libs/libnode/lib"
+ls /project/libs/libnode/lib
 echo "Test libs"
