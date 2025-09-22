@@ -43,7 +43,7 @@ fi
 
 if [ "$PLATFORM" = "windows" ]; then
     echo "Windows build"
-    winget configure ./.configurations/configuration.dsc.yaml
+    winget configure ./.configurations/configuration.dsc.yaml --accept-configuration-agreements --disable-interactivity
     ./vcbuild dll x64 release
     xcopy /E /I Release/node.dll ${INSTALL_DIR}
     xcopy /E /I Release/node.dll ${INSTALL_DIR}
