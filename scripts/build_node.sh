@@ -132,3 +132,6 @@ if os.path.isdir(bin_src):
 PY
 
 echo "Finished building Node and staging includes/libs into project."
+
+echo "Test built libs"
+ls ${PROJECT_ROOT}/libs/libnode/lib
