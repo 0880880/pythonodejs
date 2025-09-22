@@ -25,9 +25,9 @@ cd "${BUILD_DIR}"
 
 TARBALL="node-v${NODE_VERSION}.tar.gz"
 if [ ! -d "node-v${NODE_VERSION}" ]; then
-  echo "Downloading Node ${NODE_VERSION}..."
-  curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/${TARBALL}" -o "${TARBALL}"
-  tar xf "${TARBALL}"
+    echo "Downloading Node ${NODE_VERSION}..."
+    curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/${TARBALL}" -o "${TARBALL}"
+    tar xf "${TARBALL}"
 fi
 cd "node-v${NODE_VERSION}"
 # Before building, patch cares
@@ -41,37 +41,21 @@ if [ -f "$CARES_CFG" ]; then
   grep -q '#undef HAVE_GETRANDOM' "$CARES_CFG" || printf '\n#undef HAVE_GETRANDOM\n#undef HAVE_SYS_RANDOM_H\n' >> "$CARES_CFG"
 fi
 
-# Prepare configure flags (platform-specific tweaks)
-CONFIGURE_OPTS=(--prefix="${INSTALL_DIR}" --fully-static)
-# On Windows we will use MSVC/build tools; use python to generate correct build if needed
 if [ "$PLATFORM" = "windows" ]; then
-  echo "Windows build: using msbuild / Visual Studio toolchain (requires preinstalled tools)"
-  # Node's Windows build flow uses vcbuild.bat; run it via bash wrapper if provided
-  # We'll use a generic approach: let Node's build system detect env
-  python3 ./configure "${CONFIGURE_OPTS[@]}" --openssl-no-asm
-  # use built-in msbuild script (vcbuild). Fallback to `python tools\msvs\...` if needed.
-  # For simplicity attempt `make` (MSYS2) or `vcbuild` if present.
-  if [ -f "vcbuild.bat" ]; then
-    ./vcbuild.bat release
-    # install step: copy out build artifacts
-    mkdir -p "${INSTALL_DIR}/bin" "${INSTALL_DIR}/lib"
-    cp -v out/Release/node.exe "${INSTALL_DIR}/bin/" || true
-    cp -v out/Release/node.lib "${INSTALL_DIR}/lib/" || true
-  else
-    echo "vcbuild.bat not found; Windows builds typically need MSVC environment; ensure Visual Studio build tools are present."
-    exit 1
-  fi
+    echo "Windows build"
+    winget configure ./.configurations/configuration.dsc.yaml
+    ./vcbuild dll x64 release
+    xcopy /E /I Release/node.dll ${INSTALL_DIR}
+    xcopy /E /I Release/node.dll ${INSTALL_DIR}
 else
-  # Linux / macOS: normal configure & make
-  echo "Configuring Node..."
-  ./configure --prefix="${INSTALL_DIR}" --shared
-  echo "Running make -j"
-  make -j$(nproc) || make -j2
-  make install
+    # Linux / macOS: normal configure & make
+    echo "Configuring Node..."
+    ./configure --prefix="${INSTALL_DIR}" --shared
+    echo "Running make -j"
+    make -j$(nproc) || make -j2
+    make install
 fi
 
-# After install, copy headers to expected include paths for your extension
-# Node's installed layout puts headers in ${INSTALL_DIR}/include
 echo "Node built and installed to ${INSTALL_DIR}"
 ls -la "${INSTALL_DIR}" || true
 
