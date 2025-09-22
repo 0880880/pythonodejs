@@ -45,8 +45,35 @@ else
     echo "Configuring Node..."
     ./configure --prefix="${INSTALL_DIR}" --shared
     echo "Running make -j"
-    make -j$(nproc) || make -j2
+
+    # Determine number of cores cross-platform
+    if command -v nproc >/dev/null 2>&1; then
+      CORES=$(nproc)
+    elif command -v sysctl >/dev/null 2>&1; then
+      CORES=$(sysctl -n hw.ncpu)
+    else
+      CORES=2
+    fi
+
+    make -j${CORES} || make -j2
     make install
+
+    # Post-processing to remove version suffix from libnode
+    cd "${INSTALL_DIR}/lib"
+    if [ "$PLATFORM" = "linux" ]; then
+      # Assume patchelf is available (install via yum/apt if needed in your env)
+      LIB_FILE=$(ls libnode.so.* 2>/dev/null | head -n1)
+      if [ -n "$LIB_FILE" ]; then
+        patchelf --set-soname libnode.so "$LIB_FILE"
+        mv "$LIB_FILE" libnode.so
+      fi
+    elif [ "$PLATFORM" = "macos" ]; then
+      LIB_FILE=$(ls libnode.*.dylib 2>/dev/null | head -n1)
+      if [ -n "$LIB_FILE" ]; then
+        mv "$LIB_FILE" libnode.dylib
+        install_name_tool -id libnode.dylib libnode.dylib
+      fi
+    fi
 fi
 
 echo "Node built and installed to ${INSTALL_DIR}"
