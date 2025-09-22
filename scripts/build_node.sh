@@ -14,22 +14,16 @@ if [ -d "/io" ]; then
 fi
 
 PLATFORM="${1:-linux}"
-NODE_VERSION="${NODE_VERSION:-24.8.0}"
 export BUILD_DIR="${PROJECT_ROOT}/build/node-src"
 export INSTALL_DIR="${PROJECT_ROOT}/libs/libnode"
 
 mkdir -p "${BUILD_DIR}" "${INSTALL_DIR}"
 
-echo "Building Node ${NODE_VERSION} for platform=${PLATFORM}"
+echo "Building Node for platform=${PLATFORM}"
 cd "${BUILD_DIR}"
 
-TARBALL="node-v${NODE_VERSION}.tar.gz"
-if [ ! -d "node-v${NODE_VERSION}" ]; then
-    echo "Downloading Node ${NODE_VERSION}..."
-    curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/${TARBALL}" -o "${TARBALL}"
-    tar xf "${TARBALL}"
-fi
-cd "node-v${NODE_VERSION}"
+cp ${PROJECT_DIR}/include/node ./
+cd "node"
 # Before building, patch cares
 perl -0777 -pi -e 's|#  include <sys/random.h>|#  if defined(__linux__)\n#    include <unistd.h>\n#    include <sys/types.h>\n#  else\n#    include <sys/random.h>\n#  endif|' deps/cares/src/lib/util/ares_rand.c
 export CFLAGS="${CFLAGS:-} -U HAVE_GETRANDOM -U HAVE_SYS_RANDOM_H"
