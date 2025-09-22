@@ -60,10 +60,6 @@ jobs:
       - name: Build libnode (macOS host)
         run: |
           bash scripts/build_node.sh macos
-          echo "=== libnode contents ==="
-          ls -R libs/libnode
-          echo "=== include contents ==="
-          ls -R include
       - name: Build wheels with cibuildwheel (macOS)
         env:
           CIBW_PLATFORM: "macos"
