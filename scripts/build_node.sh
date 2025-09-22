@@ -14,7 +14,7 @@ if [ -d "/io" ]; then
 fi
 
 PLATFORM="${1:-linux}"
-NODE_VERSION="${NODE_VERSION:-20.19.5}"
+NODE_VERSION="${NODE_VERSION:-24.8.0}"
 export BUILD_DIR="${PROJECT_ROOT}/build/node-src"
 export INSTALL_DIR="${PROJECT_ROOT}/libs/libnode"
 
