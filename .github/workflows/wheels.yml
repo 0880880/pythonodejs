@@ -82,9 +82,15 @@ jobs:
         with:
           submodules: recursive
       - name: Install build tools
+        shell: pwsh
         run: |
           choco install -y python visualstudio2022buildtools curl nasm
           choco install -y visualstudio2022-workload-nodebuildtools
+          $progressPreference = 'SilentlyContinue'
+          Invoke-WebRequest -Uri https://aka.ms/getwinget -OutFile Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle
+          Add-AppxPackage Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle
+          winget configure ./.configurations/configuration.dsc.yaml --accept-configuration-agreements --disable-interactivity
+          
       - name: Build libnode (Windows host - MSVC)
         run: |
           bash -lc "bash scripts/build_node.sh windows"
