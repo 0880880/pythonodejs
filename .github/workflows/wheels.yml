@@ -89,8 +89,8 @@ jobs:
           $progressPreference = 'SilentlyContinue'
           Invoke-WebRequest -Uri https://aka.ms/getwinget -OutFile Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle
           Add-AppxPackage Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle
-          winget configure ./.configurations/configuration.dsc.yaml --accept-configuration-agreements --disable-interactivity
-          
+          winget configure ./include/node/.configurations/configuration.dsc.yaml --accept-configuration-agreements --disable-interactivity
+
       - name: Build libnode (Windows host - MSVC)
         run: |
           bash -lc "bash scripts/build_node.sh windows"
