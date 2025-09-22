@@ -22,7 +22,7 @@ mkdir -p "${BUILD_DIR}" "${INSTALL_DIR}"
 echo "Building Node for platform=${PLATFORM}"
 cd "${BUILD_DIR}"
 
-cp ${PROJECT_ROOT}/include/node ./
+cp -r ${PROJECT_ROOT}/include/node ./
 cd "node"
 # Before building, patch cares
 perl -0777 -pi -e 's|#  include <sys/random.h>|#  if defined(__linux__)\n#    include <unistd.h>\n#    include <sys/types.h>\n#  else\n#    include <sys/random.h>\n#  endif|' deps/cares/src/lib/util/ares_rand.c
