@@ -64,7 +64,7 @@ if [ "$PLATFORM" = "windows" ]; then
 else
   # Linux / macOS: normal configure & make
   echo "Configuring Node..."
-  ./configure --prefix="${INSTALL_DIR}"
+  ./configure --prefix="${INSTALL_DIR}" --shared
   echo "Running make -j"
   make -j$(nproc) || make -j2
   make install
@@ -148,14 +148,3 @@ if os.path.isdir(bin_src):
 PY
 
 echo "Finished building Node and staging includes/libs into project."
-
-echo "Test libs"
-echo "/project/"
-ls /project
-echo "/project/libs"
-ls /project/libs
-echo "/project/libs/libnode"
-ls /project/libs/libnode
-echo "/project/libs/libnode/lib"
-ls /project/libs/libnode/lib
-echo "Test libs"
