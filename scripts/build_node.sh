@@ -37,7 +37,7 @@ fi
 
 if [ "$PLATFORM" = "windows" ]; then
     echo "Windows build"
-    ./vcbuild dll x64 release
+    ./vcbuild.bat dll x64 release
     xcopy /E /I Release/node.dll ${INSTALL_DIR}
     xcopy /E /I Release/node.dll ${INSTALL_DIR}
 else
