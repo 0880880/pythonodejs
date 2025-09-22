@@ -88,10 +88,6 @@ jobs:
       - name: Build libnode (Windows host - MSVC)
         run: |
           bash -lc "bash scripts/build_node.sh windows"
-          echo "=== libnode contents ==="
-          ls -R libs/libnode
-          echo "=== include contents ==="
-          ls -R include
       - name: Build wheels with cibuildwheel (Windows)
         env:
           CIBW_PLATFORM: "windows"
