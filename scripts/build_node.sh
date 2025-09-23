@@ -29,12 +29,6 @@ perl -0777 -pi -e 's|#  include <sys/random.h>|#  if defined(__linux__)\n#    in
 export CFLAGS="${CFLAGS:-} -U HAVE_GETRANDOM -U HAVE_SYS_RANDOM_H"
 export CXXFLAGS="${CXXFLAGS:-} -U HAVE_GETRANDOM -U HAVE_SYS_RANDOM_H"
 
-# Also defensively patch the generated config header if it exists
-CARES_CFG="deps/cares/config/linux/ares_config.h"
-if [ -f "$CARES_CFG" ]; then
-  grep -q '#undef HAVE_GETRANDOM' "$CARES_CFG" || printf '\n#undef HAVE_GETRANDOM\n#undef HAVE_SYS_RANDOM_H\n' >> "$CARES_CFG"
-fi
-
 if [ "$PLATFORM" = "windows" ]; then
     echo "Windows build"
     ./vcbuild.bat dll x64 release
