@@ -20,7 +20,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/pyproject.toml') }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/setup.py') }}
           restore-keys: |
             ${{ runner.os }}-pip-
       - name: Install minimal host deps
