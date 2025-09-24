@@ -35,6 +35,8 @@ jobs:
           CIBW_BUILD: "cp310-* cp311-* cp312-*"
           # CIBW_MANYLINUX_X86_64_IMAGE: "manylinux2014"
           CIBW_MANYLINUX_X86_64_IMAGE: "manylinux_2_28"
+          CIBW_REPAIR_WHEEL_COMMAND: >
+            LD_LIBRARY_PATH=/project/libs/libnode/lib:${LD_LIBRARY_PATH} auditwheel repair -w {dest_dir} {wheel}
         uses: pypa/cibuildwheel@v3.0.0
         with:
           output-dir: wheelhouse
