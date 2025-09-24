@@ -62,6 +62,11 @@ jobs:
       - name: Build libnode (macOS host)
         run: |
           bash scripts/build_node.sh macos
+      - name: Debug libnode location and linking
+        run: |
+          echo "Listing libs/libnode:"
+          ls -la ${{ github.workspace }}/libs/libnode
+          find ${{ github.workspace }} -name libnode.dylib
       - name: Build wheels with cibuildwheel (macOS)
         env:
           CIBW_PLATFORM: "macos"
