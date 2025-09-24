@@ -58,8 +58,7 @@ if [ "${PLATFORM}" = "windows" ]; then
   echo "DEBUG: windows build path"
   ./vcbuild.bat dll x64 release
   echo "DEBUG: copying Release/node.dll to ${INSTALL_DIR}"
-  xcopy /E /I Release/node.dll "${INSTALL_DIR}"
-  xcopy /E /I Release/node.dll "${INSTALL_DIR}"
+  cp Release/node.dll "${INSTALL_DIR}"
   echo "DEBUG: windows build finished"
 else
   echo "DEBUG: unix build path (configure & make)"
