@@ -31,12 +31,10 @@ jobs:
         env:
           CIBW_ENVIRONMENT_LINUX: "CARES_USE_DEV_URANDOM=1"
           CIBW_PLATFORM: "linux"
-          CIBW_BEFORE_BUILD: "bash /project/scripts/run_once.sh bash scripts/build_node.sh linux && ls -R /project/libs/libnode && ls -R /project/include"
+          CIBW_BEFORE_BUILD: "bash /project/scripts/run_once.sh bash scripts/build_node.sh linux && ls -R /project/ && ls -R /project/include"
           CIBW_BUILD: "cp310-* cp311-* cp312-*"
           # CIBW_MANYLINUX_X86_64_IMAGE: "manylinux2014"
           CIBW_MANYLINUX_X86_64_IMAGE: "manylinux_2_28"
-          CIBW_REPAIR_WHEEL_COMMAND: >
-            LD_LIBRARY_PATH=/project/libs/libnode/lib:${LD_LIBRARY_PATH} auditwheel repair -w {dest_dir} {wheel}
         uses: pypa/cibuildwheel@v3.0.0
         with:
           output-dir: wheelhouse
@@ -65,7 +63,7 @@ jobs:
       - name: Debug libnode location and linking
         run: |
           echo "Listing libs/libnode:"
-          ls -la ${{ github.workspace }}/libs/libnode
+          ls -la ${{ github.workspace }}
           find ${{ github.workspace }} -name libnode.dylib
       - name: Build wheels with cibuildwheel (macOS)
         env:

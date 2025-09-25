@@ -9,7 +9,7 @@ if [ -d "/io" ]; then
 fi
 PLATFORM="${1:-linux}"
 BUILD_DIR="${PROJECT_ROOT}/build/node-src"
-INSTALL_DIR="${PROJECT_ROOT}/libs/libnode"
+INSTALL_DIR="${PROJECT_ROOT}"
 
 export BUILD_DIR INSTALL_DIR
 
@@ -56,13 +56,13 @@ fi
 
 if [ "${PLATFORM}" = "windows" ]; then
   echo "DEBUG: windows build path"
-  ./vcbuild.bat dll x64 release
+  ./vcbuild.bat static dll x64 release
   echo "DEBUG: copying Release/node.dll to ${INSTALL_DIR}"
-  cp Release/node.dll "${INSTALL_DIR}"
+  cp Release/node.dll "${INSTALL_DIR}/lib"
   echo "DEBUG: windows build finished"
 else
   echo "DEBUG: unix build path (configure & make)"
-  ./configure --prefix="${INSTALL_DIR}" --shared
+  ./configure --prefix="${INSTALL_DIR}" --fully-static
   echo "DEBUG: configure finished"
 
   if command -v nproc >/dev/null 2>&1; then
@@ -188,5 +188,5 @@ PY
 
 echo "DEBUG: finished staging includes/libs"
 echo "DEBUG: listing staged lib dir"
-ls -la "${PROJECT_ROOT}/libs/libnode/lib" || echo "DEBUG: staged lib listing failed (maybe missing)"
+ls -la "${INSTALL_DIR}/lib" || echo "DEBUG: staged lib listing failed (maybe missing)"
 echo "DEBUG: end build_node.sh"

@@ -1,10 +1,8 @@
 from setuptools import setup, Extension
-from setuptools.command.build_ext import build_ext
 import os
 import sys
-import glob
 
-ext_name = "pythonodejs"  # adjust if you want a specific name
+ext_name = "pythonodejs"
 
 include_dirs = [
     os.path.join(os.getcwd(), "include", "node", "src"),
@@ -13,20 +11,21 @@ include_dirs = [
 ]
 
 library_dirs = [
-    "libs/libnode/lib",
-    os.path.join(os.getcwd(), "libs", "libnode", "lib"),
+    os.path.join(os.getcwd(), "lib"),
 ]
 
-extra_compile_args = ["-DNODE_WANT_INTERNALS=1"]
+extra_compile_args = ["-DNODE_WANT_INTERNALS=1", "-DNODE_STATIC=1", "-static"]
 if sys.platform.startswith("win"):
     extra_compile_args += ["/std:c++20", "/Zc:__cplusplus"]
 else:
     extra_compile_args += ["-std=c++20", "-fPIC"]
 
-extra_link_args = []
+extra_link_args = ["-static"]
 
-if sys.platform.startswith("linux"):
-    extra_link_args += ["-Wl,-rpath,$ORIGIN/libs/libnode/lib"]
+if sys.platform.startswith("linux") or sys.platform.startswith("darwin"):
+    libraries += ["dl", "pthread"]
+# if sys.platform.startswith("linux"):
+#     extra_link_args += ["-Wl,-rpath,$ORIGIN/lib"]
 
 sources = ["pythonodejs/pythonodejs.cpp"]
 
@@ -35,10 +34,9 @@ ext_modules = [
         ext_name,
         sources=sources,
         include_dirs=include_dirs,
-        library_dirs=library_dirs,
-        libraries=["node"],
         extra_compile_args=extra_compile_args,
         extra_link_args=extra_link_args,
+        extra_objects=[os.path.join(library_dirs[0], "libnode.a")],
         language="c++",
     )
 ]
@@ -46,6 +44,6 @@ ext_modules = [
 setup(
     name="pythonodejs",
     version="1.0.0",
-    description="Pythonodejs NodeJS Interop",
+    description="Python–NodeJS Interop",
     ext_modules=ext_modules,
 )
