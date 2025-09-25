@@ -31,7 +31,7 @@ jobs:
         env:
           CIBW_ENVIRONMENT_LINUX: "CARES_USE_DEV_URANDOM=1"
           CIBW_PLATFORM: "linux"
-          CIBW_BEFORE_BUILD: "bash scripts/build_node.sh linux && ls -R /project/libs/libnode && ls -R /project/include"
+          CIBW_BEFORE_BUILD: "bash /project/scripts/run_once.sh bash scripts/build_node.sh linux && ls -R /project/libs/libnode && ls -R /project/include"
           CIBW_BUILD: "cp310-* cp311-* cp312-*"
           # CIBW_MANYLINUX_X86_64_IMAGE: "manylinux2014"
           CIBW_MANYLINUX_X86_64_IMAGE: "manylinux_2_28"
