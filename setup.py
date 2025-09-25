@@ -29,6 +29,11 @@ if sys.platform.startswith("linux") or sys.platform.startswith("darwin"):
 
 sources = ["pythonodejs/pythonodejs.cpp"]
 
+if sys.platform == "win32":
+    extra_objects = [os.path.join(library_dirs[0], "node.lib")]
+else:
+    extra_objects = [os.path.join(library_dirs[0], "libnode.a")]
+
 ext_modules = [
     Extension(
         ext_name,
@@ -36,7 +41,7 @@ ext_modules = [
         include_dirs=include_dirs,
         extra_compile_args=extra_compile_args,
         extra_link_args=extra_link_args,
-        extra_objects=[os.path.join(library_dirs[0], "libnode.a")],
+        extra_objects=extra_objects,
         language="c++",
     )
 ]
