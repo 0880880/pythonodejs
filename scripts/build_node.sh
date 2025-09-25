@@ -62,7 +62,7 @@ if [ "${PLATFORM}" = "windows" ]; then
   echo "DEBUG: windows build finished"
 else
   echo "DEBUG: unix build path (configure & make)"
-  ./configure --prefix="${INSTALL_DIR}" --fully-static
+  ./configure --prefix="${INSTALL_DIR}" --partly-static
   echo "DEBUG: configure finished"
 
   if command -v nproc >/dev/null 2>&1; then
