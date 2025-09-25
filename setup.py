@@ -13,6 +13,7 @@ include_dirs = [
 ]
 
 library_dirs = [
+    "libs/libnode/lib",
     os.path.join(os.getcwd(), "libs", "libnode", "lib"),
 ]
 
