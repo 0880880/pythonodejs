@@ -62,7 +62,7 @@ if [ "${PLATFORM}" = "windows" ]; then
   echo "DEBUG: windows build finished"
 else
   echo "DEBUG: unix build path (configure & make)"
-  ./configure --prefix="${INSTALL_DIR}" --partly-static
+  ./configure --prefix="${INSTALL_DIR}" --partly-static --enable-static
   echo "DEBUG: configure finished"
 
   if command -v nproc >/dev/null 2>&1; then
@@ -77,10 +77,6 @@ else
   echo "DEBUG: running make -j${CORES}"
   make -j"${CORES}" || { echo "DEBUG: make -j${CORES} failed, retrying make -j2"; make -j2; }
   echo "DEBUG: make completed"
-
-  echo "DEBUG: running make install"
-  make install
-  echo "DEBUG: make install completed"
 
   echo "DEBUG: post-processing libs in ${INSTALL_DIR}/lib"
   if [ -d "${INSTALL_DIR}/lib" ]; then
