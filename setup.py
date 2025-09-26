@@ -22,6 +22,8 @@ else:
 
 extra_link_args = ["-static"]
 
+libraries = []
+
 if sys.platform.startswith("linux") or sys.platform.startswith("darwin"):
     libraries += ["dl", "pthread"]
 # if sys.platform.startswith("linux"):
@@ -42,6 +44,7 @@ ext_modules = [
         extra_compile_args=extra_compile_args,
         extra_link_args=extra_link_args,
         extra_objects=extra_objects,
+        libraries=libraries,
         language="c++",
     )
 ]
