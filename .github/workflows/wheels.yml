@@ -25,6 +25,9 @@ jobs:
             ${{ runner.os }}-ccache-
       - name: Install deps & Setup
         run: |
+          wget https://apt.llvm.org/llvm.sh
+          chmod +x llvm.sh
+          sudo ./llvm.sh 21
           sudo apt-get update
           sudo apt-get install -y build-essential python3-dev curl pkg-config autoconf libtool automake
           sudo apt-get install -y ccache mold ninja-build clang-21 
@@ -63,7 +66,7 @@ jobs:
         run: |
           cd include/node
           ./configure --ninja --shared
-          make -j$(sysctl -n hw.ncpu)
+          make
       - name: Create archive
         run: |
           cd include/node/out/Release
