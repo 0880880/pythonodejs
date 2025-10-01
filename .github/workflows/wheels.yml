@@ -92,12 +92,10 @@ jobs:
           Invoke-WebRequest -Uri https://aka.ms/getwinget -OutFile Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle
           Add-AppxPackage Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle
           winget configure ./include/node/.configurations/configuration.dsc.yaml --accept-configuration-agreements --disable-interactivity
-
       - name: Build libnode (Windows host - MSVC)
         run: |
-          cd include/node
-         ./vcbuild.bat x64 dll openssl-no-asm
-
+          cd include\node
+          .\vcbuild.bat x64 dll openssl-no-asm
       - name: Create archive
         run: |
           cd include\node\out\Release
