@@ -61,7 +61,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: libnode-windows
-          path: include/node/out/Release/lib/*.tar.xz
+          path: include/node/out/Release/*.tar.xz
 
   build-macos:
     name: Build macOS wheels
