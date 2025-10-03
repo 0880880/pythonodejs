@@ -29,7 +29,7 @@ jobs:
           sudo apt-get install -y build-essential python3-dev curl pkg-config autoconf libtool automake \
                     ccache mold ninja-build clang-21 \
                     gcc g++ make gawk m4 texinfo bison \
-                    libc-dev libstdc++-dev python3 wget xz-utils
+                    python3 wget xz-utils gdb sed 
           sudo apt install linux-headers-$(uname -r)
           export LDFLAGS="-fuse-ld=mold"
           export LD=/usr/bin/mold
