@@ -82,7 +82,7 @@ jobs:
           make
       - name: Create archive
         run: |
-          cd include/node/out/Release/lib
+          cd include/node/out/Release
           ln -s $(ls -v libnode.* | tail -n 1) libnode.dylib
           tar -cJf "libnode-macos.tar.xz" libnode.* node
       - name: Upload
