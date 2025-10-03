@@ -56,7 +56,7 @@ jobs:
         run: |
           cd include/node/out/Release/lib
           ln -s $(ls -v libnode.so.* | tail -n 1) libnode.so
-          tar -cJf "libnode-linux.tar.xz" libnode.* node
+          tar -cJf "libnode-linux.tar.xz" libnode.*
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
@@ -84,7 +84,7 @@ jobs:
         run: |
           cd include/node/out/Release
           ln -s $(ls -v libnode.* | tail -n 1) libnode.dylib
-          tar -cJf "libnode-macos.tar.xz" libnode.* node
+          tar -cJf "libnode-macos.tar.xz" libnode.*
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
@@ -115,7 +115,7 @@ jobs:
       - name: Create archive
         run: |
           cd include\node\out\Release
-          7z a -mx9 "libnode-windows.zip" libnode.* node.*
+          7z a -mx9 "libnode-windows.zip" libnode.*
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
