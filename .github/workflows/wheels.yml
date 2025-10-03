@@ -26,13 +26,29 @@ jobs:
           chmod +x llvm.sh
           sudo ./llvm.sh 21
           sudo apt-get update
-          sudo apt-get install -y build-essential python3-dev curl pkg-config autoconf libtool automake
-          sudo apt-get install -y ccache mold ninja-build clang-21 
-          export CC="ccache clang"
-          export CXX="ccache clang++"
+          sudo apt-get install -y build-essential python3-dev curl pkg-config autoconf libtool automake \
+                    ccache mold ninja-build clang-21 \
+                    gcc g++ make gawk m4 texinfo bison \
+                    libc-dev libstdc++-dev python3 wget xz-utils
+          sudo apt install linux-headers-$(uname -r)
           export LDFLAGS="-fuse-ld=mold"
+          export LD=/usr/bin/mold
+      - name: Build GLIBC 2.28
+        run: |
+          export CC="gcc"
+          export CXX="g++"
+          cd /tmp
+          wget https://ftp.gnu.org/gnu/libc/glibc-2.28.tar.xz
+          tar -xf glibc-2.28.tar.xz
+          cd glibc-2.28
+          mkdir build && cd build
+          ../configure --prefix=/opt/glibc-2.28 --disable-werror
+          make -j$(nproc)
+
       - name: Build libnode
         run: |
+          export CC="ccache clang"
+          export CXX="ccache clang++"
           cd include/node
           ./configure --ninja --shared
           make -j$(nproc)
