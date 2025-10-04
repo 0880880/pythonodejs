@@ -37,7 +37,7 @@ jobs:
         run: |
           export CC="gcc"
           export CXX="g++"
-          export CFLAGS="-fcf-protection=none"
+          export CFLAGS="-O2 -fcf-protection=none"
           cd /tmp
           wget https://ftp.gnu.org/gnu/libc/glibc-2.28.tar.xz
           tar -xf glibc-2.28.tar.xz
