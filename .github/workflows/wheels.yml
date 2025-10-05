@@ -75,7 +75,7 @@ jobs:
         run: |
           /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" || true
           brew update || true
-          brew install python3 cmake pkg-config ninja ccache || true
+          brew install cmake ccache || true
       - name: Build libnode
         run: |
           cd include/node
