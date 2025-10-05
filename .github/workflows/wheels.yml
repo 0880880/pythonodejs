@@ -55,7 +55,7 @@ jobs:
           export LDFLAGS_host=""
           export LDFLAGS="-fuse-ld=mold -L/opt/glibc-2.28/lib -Wl,-rpath=/opt/glibc-2.28/lib -Wl,--dynamic-linker=/opt/glibc-2.28/lib/ld-linux-x86-64.so.2"
           cd include/node
-          ./configure --ninja --shared
+          ./configure --ninja --shared --cross-compiling
           make -j$(nproc)
       - name: Create archive
         run: |
