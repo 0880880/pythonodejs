@@ -17,7 +17,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.ccache
-          key: ${{ runner.os }}-ccache-${{ github.sha }}
+          key: ${{ runner.os }}-ccache-${{ github.sha }}-v2
           restore-keys: |
             ${{ runner.os }}-ccache-
       - name: Install deps & Setup
