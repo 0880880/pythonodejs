@@ -48,8 +48,11 @@ jobs:
 
       - name: Build libnode
         run: |
+          export CC_host="ccache clang"
+          export CXX_host="ccache clang++"
           export CC="ccache clang -isystem/opt/glibc-2.28/include"
           export CXX="ccache clang++ -isystem/opt/glibc-2.28/include"
+          export LDFLAGS_host=""
           export LDFLAGS="-fuse-ld=mold -L/opt/glibc-2.28/lib -Wl,-rpath=/opt/glibc-2.28/lib -Wl,--dynamic-linker=/opt/glibc-2.28/lib/ld-linux-x86-64.so.2"
           cd include/node
           ./configure --ninja --shared
