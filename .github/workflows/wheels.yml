@@ -37,7 +37,7 @@ jobs:
         run: |
           export CC="gcc"
           export CXX="g++"
-          export CFLAGS="-fcf-protection=none"
+          export CFLAGS="-O2 -fcf-protection=none"
           cd /tmp
           wget https://ftp.gnu.org/gnu/libc/glibc-2.28.tar.xz
           tar -xf glibc-2.28.tar.xz
@@ -62,8 +62,8 @@ jobs:
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: libnode-windows
-          path: include/node/out/Release/*.tar.xz
+          name: libnode-linux
+          path: include/node/out/Release/lib/*.tar.xz
 
   build-macos:
     name: Build macOS wheels
@@ -90,8 +90,8 @@ jobs:
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: libnode-windows
-          path: include/node/out/Release/lib/*.tar.xz
+          name: libnode-macos
+          path: include/node/out/Release/*.tar.xz
 
 
   build-windows:
