@@ -1,3 +1,29 @@
 [build-system]
-requires = ["setuptools>=65", "wheel", "cibuildwheel>=2"]
+requires = ["setuptools>=45", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "pythonodejs"
+version = "0.1.0"
+description = "Python-NodeJS interop library"
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "MIT" }
+authors = [{ name = "0880" }]
+
+[tool.cibuildwheel]
+build = "cp38-* cp39-* cp310-* cp311-* cp312-*"
+skip = "*-musllinux_*"
+
+test-command = "python -c 'import pythonodejs; print(pythonodejs)'"
+test-requires = []
+
+[tool.cibuildwheel.linux]
+manylinux-x86_64-image = "manylinux_2_28"
+manylinux-aarch64-image = "manylinux_2_28"
+
+[tool.cibuildwheel.macos]
+archs = ["x86_64", "arm64"]
+
+[tool.cibuildwheel.windows]
+archs = ["AMD64"]

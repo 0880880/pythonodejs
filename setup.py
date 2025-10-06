@@ -1,53 +1,82 @@
-from setuptools import setup, Extension
 import os
-import sys
+import platform
+from pathlib import Path
+from setuptools import setup, Extension
 
-ext_name = "pythonodejs"
+system = platform.system()
+
+libnode_path = os.environ.get("LIBNODE_PATH")
+
+if not libnode_path:
+    libs_dir = Path(__file__).parent / "libs"
+    if system == "Linux":
+        libnode_path = str(libs_dir / "linux")
+    elif system == "Darwin":
+        libnode_path = str(libs_dir / "macos")
+    elif system == "Windows":
+        libnode_path = str(libs_dir / "windows")
+
+node_include = str(Path(__file__).parent / "include" / "node" / "src")
+node_deps_v8 = str(
+    Path(__file__).parent / "include" / "node" / "deps" / "v8" / "include"
+)
+node_deps_uv = str(
+    Path(__file__).parent / "include" / "node" / "deps" / "uv" / "include"
+)
 
 include_dirs = [
-    os.path.join(os.getcwd(), "include", "node", "src"),
-    os.path.join(os.getcwd(), "include", "node", "deps", "v8", "include"),
-    os.path.join(os.getcwd(), "include", "node", "deps", "uv", "include"),
+    node_include,
+    node_deps_v8,
+    node_deps_uv,
 ]
 
-library_dirs = [
-    os.path.join(os.getcwd(), "lib"),
-]
-
-extra_compile_args = ["-DNODE_WANT_INTERNALS=1", "-DNODE_STATIC=1", "-static"]
-if sys.platform.startswith("win"):
-    extra_compile_args += ["/std:c++20", "/Zc:__cplusplus"]
-else:
-    extra_compile_args += ["-std=c++20", "-fPIC"]
-
-extra_link_args = ["-static"]
-
+extra_compile_args = []
+extra_link_args = []
 libraries = []
-# if sys.platform.startswith("linux"):
-#     extra_link_args += ["-Wl,-rpath,$ORIGIN/lib"]
+library_dirs = []
 
-sources = ["pythonodejs/pythonodejs.cpp"]
+if system == "Linux":
+    extra_compile_args = ["-std=c++17", "-fPIC"]
+    extra_link_args = ["-Wl,-rpath,$ORIGIN"]
+    libraries = ["node"]
+    if libnode_path:
+        library_dirs = [libnode_path]
+        extra_link_args.append(f"-Wl,-rpath,{libnode_path}")
 
-if sys.platform == "win32":
-    extra_objects = [os.path.join(library_dirs[0], "node.lib")]
-else:
-    extra_objects = [os.path.join(library_dirs[0], "libnode.a")]
+elif system == "Darwin":
+    extra_compile_args = ["-std=c++17", "-stdlib=libc++"]
+    extra_link_args = ["-Wl,-rpath,@loader_path"]
+    libraries = ["node"]
+    if libnode_path:
+        library_dirs = [libnode_path]
+        extra_link_args.append(f"-Wl,-rpath,{libnode_path}")
 
-ext_modules = [
-    Extension(
-        ext_name,
-        sources=sources,
-        include_dirs=include_dirs,
-        extra_compile_args=extra_compile_args,
-        extra_link_args=extra_link_args,
-        extra_objects=extra_objects,
-        language="c++",
-    )
-]
+elif system == "Windows":
+    extra_compile_args = ["/std:c++17", "/EHsc", "/MD"]
+    libraries = ["libnode"]
+    if libnode_path:
+        library_dirs = [libnode_path]
+
+pythonodejs_extension = Extension(
+    "pythonodejs",
+    sources=["pythonodejs/pythonodejs.cpp"],
+    include_dirs=include_dirs,
+    library_dirs=library_dirs,
+    libraries=libraries,
+    extra_compile_args=extra_compile_args,
+    extra_link_args=extra_link_args,
+    language="c++",
+)
 
 setup(
     name="pythonodejs",
-    version="1.0.0",
-    description="Python–NodeJS Interop",
-    ext_modules=ext_modules,
+    version="0.1.0",
+    description="Python-NodeJS interop library",
+    author="0880",
+    ext_modules=[pythonodejs_extension],
+    packages=["pythonodejs"],
+    package_data={
+        "pythonodejs": ["*.pyi"],
+    },
+    python_requires=">=3.8",
 )

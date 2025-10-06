@@ -120,10 +120,136 @@ jobs:
       - name: Create archive
         run: |
           cd include\node\out\Release
-          7z a -mx9 "libnode-windows.zip" libnode.* -x!*.pdb
+          Remove-Item -Path "*.pdb" -ErrorAction SilentlyContinue
+          7z a -mx9 "libnode-windows.zip" libnode.*
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
           name: libnode-windows
           path: include/node/out/Release/*.zip
+
+  build-wheels-linux:
+    name: Build wheels on Linux
+    needs: build-manylinux
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      
+      - name: Download libnode artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: libnode-linux
+          path: ./libnode-dist
+      
+      - name: Extract libnode
+        run: |
+          cd libnode-dist
+          tar -xJf libnode-linux.tar.xz
+          mkdir -p ../libs/linux
+          cp libnode.* ../libs/linux/
+          ls -la ../libs/linux/
+      
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v2.16.2
+        env:
+          CIBW_BUILD: cp38-* cp39-* cp310-* cp311-* cp312-*
+          CIBW_SKIP: "*-musllinux_*"
+          CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
+          CIBW_BEFORE_ALL_LINUX: |
+            dnf install -y libatomic
+            cp -r {package}/libs/linux/* /usr/local/lib/
+            ldconfig
+          CIBW_ENVIRONMENT_LINUX: |
+            LIBNODE_PATH=/usr/local/lib
+            LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+          CIBW_REPAIR_WHEEL_COMMAND_LINUX: |
+            auditwheel repair -w {dest_dir} {wheel} --lib-sdir .
+      
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheels-linux
+          path: ./wheelhouse/*.whl
+
+  build-wheels-macos:
+    name: Build wheels on macOS
+    needs: build-macos
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      
+      - name: Download libnode artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: libnode-macos
+          path: ./libnode-dist
+      
+      - name: Extract libnode
+        run: |
+          cd libnode-dist
+          tar -xJf libnode-macos.tar.xz
+          mkdir -p ../libs/macos
+          cp libnode.* ../libs/macos/
+          ls -la ../libs/macos/
+      
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v2.16.2
+        env:
+          CIBW_BUILD: cp38-* cp39-* cp310-* cp311-* cp312-*
+          CIBW_ARCHS_MACOS: x86_64 arm64
+          CIBW_BEFORE_ALL_MACOS: |
+            cp -r {package}/libs/macos/* /usr/local/lib/
+          CIBW_ENVIRONMENT_MACOS: |
+            LIBNODE_PATH=/usr/local/lib
+            DYLD_LIBRARY_PATH=/usr/local/lib:$DYLD_LIBRARY_PATH
+          CIBW_REPAIR_WHEEL_COMMAND_MACOS: |
+            delocate-wheel --require-archs {delocate_archs} -w {dest_dir} -v {wheel}
+      
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheels-macos
+          path: ./wheelhouse/*.whl
+
+  build-wheels-windows:
+    name: Build wheels on Windows
+    needs: build-windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      
+      - name: Download libnode artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: libnode-windows
+          path: ./libnode-dist
+      
+      - name: Extract libnode
+        shell: pwsh
+        run: |
+          cd libnode-dist
+          7z x libnode-windows.zip
+          New-Item -ItemType Directory -Force -Path ..\libs\windows
+          Copy-Item libnode.* ..\libs\windows\
+          Get-ChildItem ..\libs\windows\
+      
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v2.16.2
+        env:
+          CIBW_BUILD: cp38-* cp39-* cp310-* cp311-* cp312-*
+          CIBW_BEFORE_ALL_WINDOWS: |
+            xcopy /Y /I {package}\libs\windows\* C:\libnode\
+          CIBW_ENVIRONMENT_WINDOWS: |
+            LIBNODE_PATH=C:\libnode
+            PATH=C:\libnode;%PATH%
+          CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: |
+            delvewheel repair -w {dest_dir} {wheel} --add-path C:\libnode
+      
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheels-windows
 
