@@ -59,14 +59,14 @@ jobs:
           make -j$(nproc)
       - name: Create archive
         run: |
-          cd include/node/out/Release/lib
+          cd include/node/out/Release
           ln -s $(ls -v libnode.so.* | tail -n 1) libnode.so
           tar -cJf "libnode-linux.tar.xz" libnode.*
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
           name: libnode-linux
-          path: include/node/out/Release/lib/*.tar.xz
+          path: include/node/out/Release/*.tar.xz
 
   build-macos:
     name: Build macOS wheels
