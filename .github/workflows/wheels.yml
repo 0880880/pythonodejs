@@ -120,7 +120,7 @@ jobs:
       - name: Create archive
         run: |
           cd include\node\out\Release
-          7z a -mx9 "libnode-windows.zip" libnode.*
+          7z a -mx9 "libnode-windows.zip" libnode.* -x!*.pdb
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
