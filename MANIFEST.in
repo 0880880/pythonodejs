@@ -1,4 +1,7 @@
-include LICENSE
-include README.md
-recursive-include include *
-recursive-include libs *
+include pythonodejs/*.pyi
+include pythonodejs/common.h
+recursive-include include/node *
+recursive-exclude include/node/out *
+recursive-exclude include/node/.git *
+global-exclude *.pyc
+global-exclude __pycache__
