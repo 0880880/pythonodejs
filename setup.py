@@ -36,7 +36,7 @@ libraries = []
 library_dirs = []
 
 if system == "Linux":
-    extra_compile_args = ["-std=c++17", "-fPIC"]
+    extra_compile_args = ["-std=c++20", "-fPIC"]
     extra_link_args = ["-Wl,-rpath,$ORIGIN"]
     libraries = ["node"]
     if libnode_path:
@@ -44,7 +44,7 @@ if system == "Linux":
         extra_link_args.append(f"-Wl,-rpath,{libnode_path}")
 
 elif system == "Darwin":
-    extra_compile_args = ["-std=c++17", "-stdlib=libc++"]
+    extra_compile_args = ["-std=c++20", "-stdlib=libc++"]
     extra_link_args = ["-Wl,-rpath,@loader_path"]
     libraries = ["node"]
     if libnode_path:
@@ -52,7 +52,7 @@ elif system == "Darwin":
         extra_link_args.append(f"-Wl,-rpath,{libnode_path}")
 
 elif system == "Windows":
-    extra_compile_args = ["/std:c++17", "/EHsc", "/MD"]
+    extra_compile_args = ["/std:c++20", "/EHsc", "/MD"]
     libraries = ["libnode"]
     if libnode_path:
         library_dirs = [libnode_path]
