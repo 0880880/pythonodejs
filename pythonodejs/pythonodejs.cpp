@@ -28,7 +28,7 @@ using std::uniform_int_distribution;
 using std::unique_ptr;
 using std::vector;
 
-namespace _node
+namespace _nodejs
     = node;
 using node::CommonEnvironmentSetup;
 using node::Environment;
@@ -250,7 +250,7 @@ NodeEnv* NodeEnvCreate(const char* absolute_path)
     {
         V8Scope scope(isolate, context);
         string import_name = "import_" + random_string(6);
-        MaybeLocal<Value> ret = _node::LoadEnvironment(env,
+        MaybeLocal<Value> ret = _nodejs::LoadEnvironment(env,
             "function " + import_name + "(s) { return import(s); }"
                                         "const publicRequire = require('module').createRequire("
                 + absolute_path + ");"
@@ -610,8 +610,8 @@ void PollAsync(NodeEnv* node)
 
 void NodeEnvFree(NodeEnv* node)
 {
-    _node::SpinEventLoop(node->env);
-    _node::Stop(node->env);
+    _nodejs::SpinEventLoop(node->env);
+    _nodejs::Stop(node->env);
 }
 
 typedef struct {

@@ -1,9 +1,15 @@
 #pragma once
 
+#ifndef NODE_WANT_INTERNALS
+#define NODE_WANT_INTERNALS 1
+#endif
+
 #include "node.h"
 #include "uv.h"
 #include <assert.h>
+#include <env-inl.h>
 #include <map>
+#include <node_internals.h>
 
 using std::unique_ptr;
 
