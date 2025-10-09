@@ -44,7 +44,7 @@ if system == "Linux":
         extra_link_args.append(f"-Wl,-rpath,{libnode_path}")
 
 elif system == "Darwin":
-    extra_compile_args = ["-std=c++20", "-stdlib=libc++"]
+    extra_compile_args = ["-std=c++20", "-stdlib=libc++", "-mmacosx-version-min=10.15"]
     extra_link_args = ["-Wl,-rpath,@loader_path"]
     libraries = ["node"]
     if libnode_path:
