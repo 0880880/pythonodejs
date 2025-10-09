@@ -90,7 +90,6 @@ jobs:
       - name: Create archive
         run: |
           cd include/node/out/Release
-          ln -s $(ls -v libnode.* | tail -n 1) libnode.dylib
           tar -cJf "libnode-macos.tar.xz" libnode.*
       - name: Upload
         uses: actions/upload-artifact@v4
@@ -150,7 +149,7 @@ jobs:
           cd libnode-dist
           tar -xJf libnode-linux.tar.xz
           mkdir -p ../libs/linux
-          cp libnode.* ../libs/linux/
+          cp -P libnode.* ../libs/linux/
           ls -la ../libs/linux/
       
       - name: Build wheels
@@ -193,8 +192,9 @@ jobs:
         run: |
           cd libnode-dist
           tar -xJf libnode-macos.tar.xz
+          ln -s $(ls -v libnode.* | tail -n 1) libnode.dylib
           mkdir -p ../libs/macos
-          cp libnode.* ../libs/macos/
+          cp -P libnode.* ../libs/macos/
           ls -la ../libs/macos/
       
       - name: Build wheels
