@@ -7,8 +7,9 @@ on:
 
 jobs:
   build-manylinux:
-    name: Build Linux wheels (manylinux via cibuildwheel)
+    name: Build NodeJS Linux
     runs-on: ubuntu-latest
+    container: quay.io/pypa/manylinux_2_28_x86_64
     steps:
       - uses: actions/checkout@v4
         with:
@@ -22,39 +23,40 @@ jobs:
             ${{ runner.os }}-ccache-
       - name: Install deps & Setup
         run: |
-          wget https://apt.llvm.org/llvm.sh
-          chmod +x llvm.sh
-          sudo ./llvm.sh 21
-          sudo apt-get update
-          sudo apt-get install -y build-essential python3-dev curl pkg-config autoconf libtool automake \
-                    ccache mold ninja-build clang-21 \
-                    gcc g++ make gawk m4 texinfo bison \
-                    python3 wget xz-utils gdb sed 
-          sudo apt install linux-headers-$(uname -r)
-          export LDFLAGS="-fuse-ld=mold"
-          export LD=/usr/bin/mold
-      - name: Build GLIBC 2.28
-        run: |
-          export CC="gcc"
-          export CXX="g++"
-          export CFLAGS="-O2 -fcf-protection=none"
+          dnf update -y
+          dnf install -y epel-release
+          dnf install -y gcc gcc-c++ make python3-devel curl pkg-config autoconf libtool automake \
+                    ccache ninja-build gawk m4 texinfo bison python3 wget xz gdb sed kernel-headers
+          # Install Mold from prebuilt binary
           cd /tmp
-          wget https://ftp.gnu.org/gnu/libc/glibc-2.28.tar.xz
-          tar -xf glibc-2.28.tar.xz
-          cd glibc-2.28
-          mkdir build && cd build
-          ../configure --prefix=/opt/glibc-2.28 --disable-werror
-          make -j$(nproc)
-
+          wget https://github.com/rui314/mold/releases/download/v2.40.0/mold-2.40.0-x86_64-linux.tar.gz
+          tar -xzf mold-2.40.0-x86_64-linux.tar.gz
+          cp mold-2.40.0-x86_64-linux/bin/mold /usr/local/bin/mold
+          # Build Clang 21 from source
+          cd /tmp
+          wget https://github.com/llvm/llvm-project/releases/download/llvmorg-21.1.0/llvm-21.1.0.src.tar.xz
+          wget https://github.com/llvm/llvm-project/releases/download/llvmorg-21.1.0/clang-21.1.0.src.tar.xz
+          tar -xf llvm-21.1.0.src.tar.xz
+          tar -xf clang-21.1.0.src.tar.xz -C llvm-21.1.0.src/tools
+          mv llvm-21.1.0.src/tools/clang-21.1.0.src llvm-21.1.0.src/tools/clang
+          mkdir llvm-21.1.0.src/build
+          cd llvm-21.1.0.src/build
+          export CC="ccache gcc"
+          export CXX="ccache g++"
+          cmake -DCMAKE_BUILD_TYPE=Release -DLLVM_ENABLE_PROJECTS="clang" -G Ninja ..
+          ninja -j$(nproc)
+          ninja install
+          export LDFLAGS="-fuse-ld=mold"
+          export LD=/usr/local/bin/mold
+          export PATH=/usr/local/bin:$PATH
       - name: Build libnode
         run: |
           export CC_host="ccache clang"
           export CXX_host="ccache clang++"
-          export CC="ccache clang --sysroot=/opt/glibc-2.28"
-          export CXX="ccache clang++ --sysroot=/opt/glibc-2.28"
+          export CC="ccache clang"
+          export CXX="ccache clang++"
           export LDFLAGS_host="-fuse-ld=mold"
-          export LDFLAGS="-fuse-ld=mold -L/opt/glibc-2.28/lib -Wl,-rpath=/opt/glibc-2.28/lib -Wl,--dynamic-linker=/opt/glibc-2.28/lib/ld-linux-x86-64.so.2"
-
+          export LDFLAGS="-fuse-ld=mold"
           cd include/node
           ./configure --shared --cross-compiling
           make -j$(nproc)
@@ -70,7 +72,7 @@ jobs:
           path: include/node/out/Release/*.tar.xz
 
   build-macos:
-    name: Build macOS wheels
+    name: Build NodeJS macOS
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -98,7 +100,7 @@ jobs:
 
 
   build-windows:
-    name: Build Windows wheels
+    name: Build NodeJS Windows
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
