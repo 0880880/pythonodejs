@@ -32,32 +32,45 @@ jobs:
           wget https://github.com/rui314/mold/releases/download/v2.40.0/mold-2.40.0-x86_64-linux.tar.gz
           tar -xzf mold-2.40.0-x86_64-linux.tar.gz
           cp mold-2.40.0-x86_64-linux/bin/mold /usr/local/bin/mold
-          # Build Clang 21 from source
+          set -euxo pipefail
+
+          LLVM_VERSION=21.1.0
+          CMAKE_VERSION=3.30.5
+          NINJA_VERSION=1.12.1
+
+          INSTALL_BASE=/usr/local
+          LLVM_DIR=${INSTALL_BASE}/clang-${LLVM_VERSION}
+          CMAKE_DIR=${INSTALL_BASE}/cmake-${CMAKE_VERSION}
+          NINJA_DIR=${INSTALL_BASE}/ninja-${NINJA_VERSION}
+
+          mkdir -p "${INSTALL_BASE}"
+
           cd /tmp
-          wget https://github.com/llvm/llvm-project/releases/download/llvmorg-21.1.0/llvm-21.1.0.src.tar.xz
-          wget https://github.com/llvm/llvm-project/releases/download/llvmorg-21.1.0/clang-21.1.0.src.tar.xz
-          wget https://github.com/llvm/llvm-project/releases/download/llvmorg-21.1.0/cmake-21.1.0.src.tar.xz
-          mkdir llvm-project
-          cd llvm-project
-          tar -xf ../../llvm-21.1.0.src.tar.xz
-          mv llvm-21.1.0.src llvm
-          tar -xf ../../cmake-21.1.0.src.tar.xz
-          mv cmake-21.1.0.src cmake
-          tar -xf ../../clang-21.1.0.src.tar.xz
-          mv clang-21.1.0.src clang
-          cd ../..
-          mkdir llvm-build
-          cd llvm-build
-          export CC="ccache gcc"
-          export CXX="ccache g++"
-          cmake -DCMAKE_BUILD_TYPE=Release -DLLVM_ENABLE_PROJECTS="clang" -G Ninja \
-                -DLLVM_INCLUDE_TESTS=OFF -DLLVM_INCLUDE_BENCHMARKS=OFF \
-                ../llvm-project/llvm
-          ninja -j$(nproc)
-          ninja install
-          export LDFLAGS="-fuse-ld=mold"
-          export LD=/usr/local/bin/mold
-          export PATH=/usr/local/bin:$PATH
+          curl -sSL -O "https://github.com/llvm/llvm-project/releases/download/llvmorg-${LLVM_VERSION}/LLVM-${LLVM_VERSION}-Linux-X64.tar.xz"
+          tar -xJf "LLVM-${LLVM_VERSION}-Linux-X64.tar.xz" -C "${INSTALL_BASE}"
+          mv "${INSTALL_BASE}/LLVM-${LLVM_VERSION}-Linux-X64" "${LLVM_DIR}"
+
+          curl -sSL -O "https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-linux-x86_64.tar.gz"
+          tar -xzf "cmake-${CMAKE_VERSION}-linux-x86_64.tar.gz" -C "${INSTALL_BASE}"
+          mv "${INSTALL_BASE}/cmake-${CMAKE_VERSION}-linux-x86_64" "${CMAKE_DIR}"
+
+          curl -sSL -O "https://github.com/ninja-build/ninja/releases/download/v${NINJA_VERSION}/ninja-linux.zip"
+          mkdir -p "${NINJA_DIR}/bin"
+          unzip -q "ninja-linux.zip" -d "${NINJA_DIR}/bin"
+          chmod +x "${NINJA_DIR}/bin/ninja"
+
+          export PATH="${LLVM_DIR}/bin:${CMAKE_DIR}/bin:${NINJA_DIR}/bin:${PATH}"
+          export CC=clang
+          export CXX=clang++
+
+          if command -v mold >/dev/null 2>&1; then
+              export LDFLAGS="-fuse-ld=mold"
+              export LD=mold
+          fi
+
+          clang --version
+          cmake --version
+          ninja --version
       - name: Build libnode
         run: |
           export CC_host="ccache clang"
@@ -67,7 +80,7 @@ jobs:
           export LDFLAGS_host="-fuse-ld=mold"
           export LDFLAGS="-fuse-ld=mold"
           cd include/node
-          ./configure --shared --cross-compiling
+          ./configure --shared --ninja
           make -j$(nproc)
       - name: Create archive
         run: |
