@@ -55,7 +55,7 @@ jobs:
           unzip -q "ninja-linux.zip" -d "${NINJA_DIR}/bin"
           chmod +x "${NINJA_DIR}/bin/ninja"
 
-          export PATH="$${CMAKE_DIR}/bin:${NINJA_DIR}/bin:${PATH}"
+          export PATH="${CMAKE_DIR}/bin:${NINJA_DIR}/bin:${PATH}"
           export CC=clang
           export CXX=clang++
 
