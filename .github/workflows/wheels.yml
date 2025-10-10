@@ -27,7 +27,6 @@ jobs:
           dnf install -y epel-release
           dnf install -y gcc gcc-c++ make python3-devel curl pkg-config autoconf libtool automake \
                     ccache gawk m4 texinfo bison python3 wget xz gdb sed kernel-headers llvm-toolset
-          scl enable llvm-toolset bash
           # Install Mold from prebuilt binary
           cd /tmp
           wget https://github.com/rui314/mold/releases/download/v2.40.0/mold-2.40.0-x86_64-linux.tar.gz
