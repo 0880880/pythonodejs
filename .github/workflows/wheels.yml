@@ -26,7 +26,7 @@ jobs:
           dnf update -y
           dnf install -y epel-release
           dnf install -y gcc gcc-c++ make python3-devel curl pkg-config autoconf libtool automake \
-                    ccache ninja-build gawk m4 texinfo bison python3 wget xz gdb sed kernel-headers
+                    ccache ninja-build gawk m4 texinfo bison python3 wget xz gdb sed kernel-headers cmake
           # Install Mold from prebuilt binary
           cd /tmp
           wget https://github.com/rui314/mold/releases/download/v2.40.0/mold-2.40.0-x86_64-linux.tar.gz
@@ -36,14 +36,23 @@ jobs:
           cd /tmp
           wget https://github.com/llvm/llvm-project/releases/download/llvmorg-21.1.0/llvm-21.1.0.src.tar.xz
           wget https://github.com/llvm/llvm-project/releases/download/llvmorg-21.1.0/clang-21.1.0.src.tar.xz
-          tar -xf llvm-21.1.0.src.tar.xz
-          tar -xf clang-21.1.0.src.tar.xz -C llvm-21.1.0.src/tools
-          mv llvm-21.1.0.src/tools/clang-21.1.0.src llvm-21.1.0.src/tools/clang
-          mkdir llvm-21.1.0.src/build
-          cd llvm-21.1.0.src/build
+          wget https://github.com/llvm/llvm-project/releases/download/llvmorg-21.1.0/cmake-21.1.0.src.tar.xz
+          mkdir llvm-project
+          cd llvm-project
+          tar -xf ../../llvm-21.1.0.src.tar.xz
+          mv llvm-21.1.0.src llvm
+          tar -xf ../../cmake-21.1.0.src.tar.xz
+          mv cmake-21.1.0.src cmake
+          tar -xf ../../clang-21.1.0.src.tar.xz
+          mv clang-21.1.0.src clang
+          cd ../..
+          mkdir llvm-build
+          cd llvm-build
           export CC="ccache gcc"
           export CXX="ccache g++"
-          cmake -DCMAKE_BUILD_TYPE=Release -DLLVM_ENABLE_PROJECTS="clang" -G Ninja ..
+          cmake -DCMAKE_BUILD_TYPE=Release -DLLVM_ENABLE_PROJECTS="clang" -G Ninja \
+                -DLLVM_INCLUDE_TESTS=OFF -DLLVM_INCLUDE_BENCHMARKS=OFF \
+                ../llvm-project/llvm
           ninja -j$(nproc)
           ninja install
           export LDFLAGS="-fuse-ld=mold"
