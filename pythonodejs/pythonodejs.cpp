@@ -53,33 +53,11 @@ using v8::Value;
 
 #ifdef _WIN32
 #include <windows.h>
-using argv_type = wchar_t*;
 #define NODE_MAIN int wmain
 
-void FixupMain(int argc, argv_type raw_argv[], char*** argv)
+void FixupMain(int argc, char* raw_argv[], char*** argv)
 {
-    // Convert argv to UTF8.
-    *argv = new char*[argc + 1];
-    for (int i = 0; i < argc; i++) {
-        // Compute the size of the required buffer
-        DWORD size = WideCharToMultiByte(
-            CP_UTF8, 0, raw_argv[i], -1, nullptr, 0, nullptr, nullptr);
-        if (size == 0) {
-            // This should never happen.
-            fprintf(stderr, "Could not convert arguments to utf8.");
-            exit(1);
-        }
-        // Do the actual conversion
-        (*argv)[i] = new char[size];
-        DWORD result = WideCharToMultiByte(
-            CP_UTF8, 0, raw_argv[i], -1, (*argv)[i], size, nullptr, nullptr);
-        if (result == 0) {
-            // This should never happen.
-            fprintf(stderr, "Could not convert arguments to utf8.");
-            exit(1);
-        }
-    }
-    (*argv)[argc] = nullptr;
+    *argv = raw_argv;
 }
 #else
 
