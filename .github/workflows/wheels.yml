@@ -28,16 +28,18 @@ jobs:
           dnf install -y gcc gcc-c++ make python3-devel curl pkg-config autoconf libtool automake \
                     ccache gawk m4 texinfo bison python3 wget xz gdb sed kernel-headers llvm-toolset ninja-build cmake
           # Install Mold from prebuilt binary
-          cd /tmp
-          wget https://github.com/rui314/mold/releases/download/v2.40.0/mold-2.40.0-x86_64-linux.tar.gz
-          tar -xzf mold-2.40.0-x86_64-linux.tar.gz
-          cp mold-2.40.0-x86_64-linux/bin/mold /usr/local/bin/mold
+          set -eux
+          curl -LO https://github.com/rui314/mold/releases/latest/download/mold-x86_64-linux.tar.gz
+          tar -xzf mold-x86_64-linux.tar.gz
+          mv mold-x86_64-linux /usr/local/mold
+          ln -s /usr/local/mold/bin/mold /usr/local/bin/mold
 
           if command -v mold >/dev/null 2>&1; then
               export LDFLAGS="-fuse-ld=mold"
               export LD=mold
           fi
 
+          mold --version
           clang --version
           cmake --version
           ninja --version
