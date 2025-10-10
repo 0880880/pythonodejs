@@ -30,8 +30,8 @@ jobs:
           # Install Mold from prebuilt binary
           set -eux
           curl -LO https://github.com/rui314/mold/releases/download/v2.40.4/mold-2.40.4-x86_64-linux.tar.gz
-          tar -xzf mold-x86_64-linux.tar.gz
-          mv mold-x86_64-linux /usr/local/mold
+          tar -xzf mold-2.40.4-x86_64-linux.tar.gz
+          mv mold-2.40.4-x86_64-linux /usr/local/mold
           ln -s /usr/local/mold/bin/mold /usr/local/bin/mold
 
           if command -v mold >/dev/null 2>&1; then
