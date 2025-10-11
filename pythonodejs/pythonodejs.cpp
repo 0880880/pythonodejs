@@ -666,7 +666,7 @@ PyObject* NodeJS_require(NodeJSObject* self, PyObject* arg)
     {
         V8Scope scope(self->node);
         Local<Context> context = self->node->isolate->GetCurrentContext();
-        Local<Function> require = self->node->runInThisContext.Get(self->node->isolate);
+        Local<Function> require = self->node->require.Get(self->node->isolate);
         vector<Local<Value>> argv = { String::NewFromUtf8(self->node->isolate, url).ToLocalChecked() };
         return JSToPy(self->node, require->CallAsFunction(context, context->Global(), 1, argv.data()).ToLocalChecked());
     }
