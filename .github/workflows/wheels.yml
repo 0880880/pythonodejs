@@ -157,6 +157,9 @@ jobs:
           CIBW_BEFORE_ALL_LINUX: |
             dnf install -y libatomic
             cp -r {package}/libs/linux/* /usr/local/lib/
+            echo Test
+            ls /usr/local/lib | grep -i "node"
+            echo End Test
             ldconfig
           CIBW_ENVIRONMENT_LINUX: |
             LIBNODE_PATH=/usr/local/lib
