@@ -33,6 +33,7 @@ jobs:
           tar -xzf mold-2.40.4-x86_64-linux.tar.gz
           mv mold-2.40.4-x86_64-linux /usr/local/mold
           ln -s /usr/local/mold/bin/mold /usr/local/bin/mold
+          ln -s /usr/local/mold/bin/mold /usr/local/bin/ld.mold
 
           if command -v mold >/dev/null 2>&1; then
               export LDFLAGS="-fuse-ld=mold"
