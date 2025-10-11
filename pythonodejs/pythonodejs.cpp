@@ -757,5 +757,19 @@ static struct PyModuleDef node_mod = {
 // Module initialization function
 PyMODINIT_FUNC PyInit_pythonodejs(void)
 {
-    return PyModule_Create(&node_mod);
+    PyObject* m;
+
+    if (PyType_Ready(&NodeJSType) < 0)
+        return NULL;
+
+    m = PyModule_Create(&node_mod);
+    if (m == NULL)
+        return NULL;
+
+    Py_INCREF(&NodeJSType);
+    if (PyModule_AddObject(m, "NodeJS", (PyObject*)&NodeJSType) < 0) {
+        Py_DECREF(&NodeJSType);
+        Py_DECREF(m);
+        return NULL;
+    }
 }
