@@ -41,7 +41,7 @@ if system == "Linux":
     libraries = ["node"]
     if libnode_path:
         library_dirs = [libnode_path]
-        extra_link_args.append(f"-Wl,-rpath,{libnode_path}")
+        # extra_link_args.append(f"-Wl,-rpath,{libnode_path}")
 
 elif system == "Darwin":
     extra_compile_args = ["-std=c++20", "-stdlib=libc++", "-mmacosx-version-min=10.15"]
@@ -58,7 +58,7 @@ elif system == "Windows":
         library_dirs = [libnode_path]
 
 pythonodejs_extension = Extension(
-    "pythonodejs",
+    "pythonodejs.pythonodejs",
     sources=["pythonodejs/pythonodejs.cpp"],
     include_dirs=include_dirs,
     library_dirs=library_dirs,

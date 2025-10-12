@@ -137,10 +137,11 @@ jobs:
       
       - name: Extract libnode
         run: |
-          cd libnode-dist
-          mkdir -p ../libs/linux
-          ln -sf libnode.so.* ../libs/linux/libnode.so
-          ls -la ../libs/linux/
+          mkdir -p libs/linux
+          cp libnode-dist/libnode.so.* libs/linux/
+          cd libs/linux
+          ln -sf libnode.so.* libnode.so
+          ls -la # Verify
       
       - name: Build wheels
         uses: pypa/cibuildwheel@v3.2.0
@@ -151,10 +152,8 @@ jobs:
           CIBW_BEFORE_ALL_LINUX: |
             dnf install -y libatomic
             cp -r {package}/libs/linux/* /usr/local/lib/
-            echo Test
-            ls /usr/local/lib | grep -i "node"
-            echo End Test
             ldconfig
+            ls /usr/local/lib | grep -i "node"
           CIBW_ENVIRONMENT_LINUX: |
             LIBNODE_PATH=/usr/local/lib
             LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
