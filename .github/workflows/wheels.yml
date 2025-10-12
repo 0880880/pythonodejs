@@ -55,15 +55,11 @@ jobs:
           cd include/node
           ./configure --shared --ninja
           make -j$(nproc)
-          echo out/
-          ls out/
-          echo out/Release/
-          ls out/Release/
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
           name: libnode-linux
-          path: include/node/out/Release/libnode.so.*
+          path: include/node/out/Release/lib/libnode.so.*
 
   build-macos:
     name: Build NodeJS macOS
