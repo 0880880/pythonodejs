@@ -139,9 +139,7 @@ jobs:
         run: |
           mkdir -p libs/linux
           cp libnode-dist/libnode.so.* libs/linux/
-          cd libs/linux
-          ln -sf libnode.so.* libnode.so
-          ls -la # Verify
+          ls -la libs/linux/
       
       - name: Build wheels
         uses: pypa/cibuildwheel@v3.2.0
@@ -150,10 +148,11 @@ jobs:
           CIBW_SKIP: "*-musllinux_*"
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
           CIBW_BEFORE_ALL_LINUX: |
-            dnf install -y libatomic
-            cp -r {package}/libs/linux/* /usr/local/lib/
+            cp {package}/libs/linux/libnode.so.* /usr/local/lib/
+            cd /usr/local/lib/
+            ln -sf libnode.so.* libnode.so
             ldconfig
-            ls /usr/local/lib | grep -i "node"
+            ls -la | grep -i "node"
           CIBW_ENVIRONMENT_LINUX: |
             LIBNODE_PATH=/usr/local/lib
             LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
