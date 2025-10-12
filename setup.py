@@ -38,10 +38,11 @@ library_dirs = []
 if system == "Linux":
     extra_compile_args = ["-std=c++20", "-fPIC"]
     extra_link_args = ["-Wl,-rpath,$ORIGIN"]
-    libraries = ["node"]
+    # libraries = ["node"]
     if libnode_path:
-        library_dirs = [libnode_path]
-        # extra_link_args.append(f"-Wl,-rpath,{libnode_path}")
+        # library_dirs = [libnode_path]
+        extra_link_args.append(os.path.join(libnode_path, "libnode.so"))
+    # extra_link_args.append(f"-Wl,-rpath,{libnode_path}")
 
 elif system == "Darwin":
     extra_compile_args = ["-std=c++20", "-stdlib=libc++", "-mmacosx-version-min=10.15"]
