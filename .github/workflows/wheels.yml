@@ -55,16 +55,11 @@ jobs:
           cd include/node
           ./configure --shared --ninja
           make -j$(nproc)
-      - name: Create archive
-        run: |
-          cd include/node/out/Release
-          ln -s $(ls -v libnode.so.* | tail -n 1) libnode.so
-          tar -cJf "libnode-linux.tar.xz" libnode.*
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
           name: libnode-linux
-          path: include/node/out/Release/*.tar.xz
+          path: include/node/out/Release/libnode.so.*
 
   build-macos:
     name: Build NodeJS macOS
@@ -143,9 +138,8 @@ jobs:
       - name: Extract libnode
         run: |
           cd libnode-dist
-          tar -xJf libnode-linux.tar.xz
           mkdir -p ../libs/linux
-          cp -P libnode.* ../libs/linux/
+          ln -sf libnode.so.* ../libs/linux/libnode.so
           ls -la ../libs/linux/
       
       - name: Build wheels
