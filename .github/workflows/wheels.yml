@@ -56,9 +56,9 @@ jobs:
           ./configure --shared --ninja
           make -j$(nproc)
           echo out/
-          ls include/node/out/
+          ls out/
           echo out/Release/
-          ls include/node/out/Release/
+          ls out/Release/
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
