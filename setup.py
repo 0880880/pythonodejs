@@ -49,7 +49,6 @@ elif system == "Darwin":
     libraries = ["node"]
     if libnode_path:
         library_dirs = [libnode_path]
-        extra_link_args.append(f"-Wl,-rpath,{libnode_path}")
 
 elif system == "Windows":
     extra_compile_args = ["/std:c++20", "/Zc:__cplusplus", "/EHsc", "/MD"]
