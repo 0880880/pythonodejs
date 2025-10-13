@@ -186,10 +186,12 @@ jobs:
         run: |
           cd libnode-dist
           tar -xJf libnode-macos.tar.xz
-          ln -s $(ls -v libnode.* | tail -n 1) libnode.dylib
           mkdir -p ../libs/macos
-          cp -P libnode.* ../libs/macos/
-          ls -la ../libs/macos/
+          VERSIONED_LIB=$(ls libnode.*.dylib | head -n 1)
+          cp "$VERSIONED_LIB" ../libs/macos/
+          cd ../libs/macos
+          ln -sf "$VERSIONED_LIB" libnode.dylib
+          ls -la
       
       - name: Build wheels
         uses: pypa/cibuildwheel@v3.2.0
@@ -200,6 +202,7 @@ jobs:
           CIBW_BEFORE_ALL_MACOS: |
             mkdir -p $HOME/lib
             cp -r {package}/libs/macos/* $HOME/lib/
+            
           CIBW_ENVIRONMENT_MACOS: |
             LIBNODE_PATH=$HOME/lib
             DYLD_LIBRARY_PATH=$HOME/lib:$DYLD_LIBRARY_PATH
