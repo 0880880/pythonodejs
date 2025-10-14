@@ -89,10 +89,25 @@ jobs:
           /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" || true
           brew update || true
           brew install cmake ccache || true
+          echo "=== Checking compilers ==="
+          which clang || echo "clang not found"
+          which clang++ || echo "clang++ not found"
+          clang --version || echo "clang version check failed"
+          clang++ --version || echo "clang++ version check failed"
+          
+          echo "=== Checking ccache ==="
+          which ccache || echo "ccache not found"
+          ccache --version || echo "ccache version check failed"
+          
+          echo "=== Testing ccache with compilers ==="
+          ccache clang --version || echo "ccache clang failed"
+          ccache clang++ --version || echo "ccache clang++ failed"
       - name: Build libnode
         run: |
-          export CC="ccache cc"
-          export CXX="ccache c++"
+          CLANG_PATH=$(which clang)
+          CLANGXX_PATH=$(which clang++)
+          export CC="ccache $CLANG_PATH"
+          export CXX="ccache $CLANGXX_PATH"
           cd include/node
           ./configure ${{ matrix.configure_flags }}
           make
