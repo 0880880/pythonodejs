@@ -95,9 +95,9 @@ jobs:
           ccache --version
       - name: Build libnode
         run: |
-          export MACOSX_DEPLOYMENT_TARGET=${{ matrix.deployment_target }}
-          export CC="ccache cc"
-          export CXX="ccache c++"
+          # export MACOSX_DEPLOYMENT_TARGET=${{ matrix.deployment_target }}
+          export CC="ccache clang"
+          export CXX="ccache clang++"
           cd include/node
           ./configure ${{ matrix.configure_flags }}
           make
