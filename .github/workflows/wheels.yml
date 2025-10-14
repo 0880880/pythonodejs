@@ -75,6 +75,8 @@ jobs:
           brew install cmake ccache || true
       - name: Build libnode
         run: |
+          export CC="ccache clang"
+          export CXX="ccache clang++"
           cd include/node
           ./configure --ninja --shared
           make
