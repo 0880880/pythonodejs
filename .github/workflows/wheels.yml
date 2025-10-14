@@ -97,7 +97,8 @@ jobs:
         run: |
           # export MACOSX_DEPLOYMENT_TARGET=${{ matrix.deployment_target }}
           export CC="ccache clang"
-          export CXX="ccache clang++"
+          export CXX="ccache clang++ -std=c++17"
+          export CXXFLAGS="-std=c++17"
           cd include/node
           ./configure ${{ matrix.configure_flags }}
           make
