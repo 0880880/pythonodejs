@@ -70,9 +70,11 @@ jobs:
           - arch: x86_64
             os: macos-13  # Intel runner
             configure_flags: --ninja --shared
+            deployment_target: "10.15"
           - arch: arm64
             os: macos-14  # Apple Silicon runner
             configure_flags: --ninja --shared
+            deployment_target: "11.0" 
     steps:
       - uses: actions/checkout@v4
         with:
@@ -93,6 +95,7 @@ jobs:
           ccache --version
       - name: Build libnode
         run: |
+          export MACOSX_DEPLOYMENT_TARGET=${{ matrix.deployment_target }}
           export CC="ccache cc"
           export CXX="ccache c++"
           cd include/node
