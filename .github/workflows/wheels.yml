@@ -87,7 +87,8 @@ jobs:
       - name: Install Homebrew deps
         run: |
           /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" || true  
-          brew install cmake ninja || true
+          brew install cmake ninja llvm || true
+          echo "$(brew --prefix llvm)/bin" >> $GITHUB_PATH
           curl -L https://github.com/ccache/ccache/releases/download/v4.12.1/ccache-4.12.1-darwin.tar.gz | tar xz
           sudo cp ccache-4.12.1-darwin/ccache /usr/local/bin/
           ccache --version
@@ -95,7 +96,7 @@ jobs:
         run: |
           export CC="ccache clang"
           export CXX="ccache clang++ -std=c++20"
-          export CXXFLAGS="-std=c++20 -fpermissive"
+          export CXXFLAGS="-std=c++20"
           cd include/node
           ./configure ${{ matrix.configure_flags }}
           make
