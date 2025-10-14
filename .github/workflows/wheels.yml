@@ -63,7 +63,16 @@ jobs:
 
   build-macos:
     name: Build NodeJS macOS
-    runs-on: macos-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - arch: x86_64
+            os: macos-13  # Intel runner
+            configure_flags: --ninja --shared
+          - arch: arm64
+            os: macos-14  # Apple Silicon runner
+            configure_flags: --ninja --shared
     steps:
       - uses: actions/checkout@v4
         with:
@@ -72,9 +81,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.ccache
-          key: ${{ runner.os }}-ccache-${{ github.sha }}-v2
+          key: ${{ matrix.os }}-${{ matrix.arch }}-ccache-${{ github.sha }}-v2
           restore-keys: |
-            ${{ runner.os }}-ccache-
+            ${{ matrix.os }}-${{ matrix.arch }}-ccache-
       - name: Install Homebrew deps
         run: |
           /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" || true
@@ -85,7 +94,7 @@ jobs:
           export CC="ccache clang"
           export CXX="ccache clang++"
           cd include/node
-          ./configure --ninja --shared
+          ./configure ${{ matrix.configure_flags }}
           make
       - name: Create archive
         run: |
@@ -94,7 +103,7 @@ jobs:
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: libnode-macos
+          name: libnode-macos-${{ matrix.arch }}
           path: include/node/out/Release/*.tar.xz
 
 
@@ -191,7 +200,16 @@ jobs:
   build-wheels-macos:
     name: Build wheels on macOS
     needs: build-macos
-    runs-on: macos-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - arch: x86_64
+            os: macos-13
+            cibw_arch: x86_64
+          - arch: arm64
+            os: macos-14
+            cibw_arch: arm64
     steps:
       - uses: actions/checkout@v4
         with:
@@ -200,7 +218,7 @@ jobs:
       - name: Download libnode artifact
         uses: actions/download-artifact@v4
         with:
-          name: libnode-macos
+          name: libnode-macos-${{ matrix.arch }}
           path: ./libnode-dist
       
       - name: Extract libnode
@@ -213,13 +231,16 @@ jobs:
           cd ../libs/macos
           ln -sf "$VERSIONED_LIB" libnode.dylib
           ls -la
+          # Verify architecture
+          file libnode.dylib
+          lipo -info libnode.dylib
       
       - name: Build wheels
         uses: pypa/cibuildwheel@v3.2.0
         env:
           MACOSX_DEPLOYMENT_TARGET: 10.15
           CIBW_BUILD: cp38-* cp39-* cp310-* cp311-* cp312-*
-          CIBW_ARCHS_MACOS: x86_64 arm64
+          CIBW_ARCHS_MACOS: ${{ matrix.cibw_arch }}
           CIBW_BEFORE_ALL_MACOS: |
             mkdir -p $HOME/lib
             cp -r {package}/libs/macos/* $HOME/lib/
