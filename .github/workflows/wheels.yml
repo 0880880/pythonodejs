@@ -129,11 +129,12 @@ jobs:
         shell: pwsh
         run: |
           choco install -y python visualstudio2022buildtools curl nasm 7zip
-          choco install -y visualstudio2022-workload-vctools --package-parameters "--add Microsoft.VisualStudio.Component.VC.Llvm.Clang --add Microsoft.VisualStudio.Component.VC.Llvm.ClangToolset"
+          choco install -y visualstudio2022-workload-vctools --package-parameters "--add Microsoft.VisualStudio.ComponentGroup.NativeDesktop.Llvm.Clang --add Microsoft.VisualStudio.Component.VC.Llvm.ClangToolset"
           choco install -y visualstudio2022-workload-nodebuildtools
           $progressPreference = 'SilentlyContinue'
           Invoke-WebRequest -Uri https://aka.ms/getwinget -OutFile Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle
           Add-AppxPackage Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle
+          & "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
           winget configure ./include/node/.configurations/configuration.dsc.yaml --accept-configuration-agreements --disable-interactivity
           Invoke-WebRequest -Uri https://github.com/ccache/ccache/releases/download/v4.12.1/ccache-4.12.1-windows-x86_64.zip -OutFile $Env:RUNNER_TEMP\ccache.zip
           Expand-Archive -Path $Env:RUNNER_TEMP\ccache.zip -DestinationPath include\node -Force
