@@ -144,7 +144,7 @@ jobs:
       - name: Build libnode (Windows host - MSVC)
         run: |
           cd include\node
-          .\vcbuild.bat x64 dll openssl-no-asm clang-cl ccache include\node\cl.exe
+          .\vcbuild.bat x64 dll openssl-no-asm ccache include\node\cl.exe
       - name: Create archive
         run: |
           cd include\node\out\Release
