@@ -116,80 +116,83 @@ jobs:
     runs-on: windows-2022
     env:
       CCACHE_VERSION: "4.12.1"
-      LLVM_INSTALL_DIR: "C:\\Program Files\\LLVM"
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
           submodules: recursive
-      - name: Setup ccache
+
+      - name: Setup ccache cache
         uses: actions/cache@v4
         with:
-          path: $HOME/.ccache
-          key: ${{ runner.os }}-ccache-${{ github.sha }}-v2
+          path: ~\AppData\Local\ccache
+          key: ${{ runner.os }}-ccache-${{ github.sha }}-v3
           restore-keys: |
             ${{ runner.os }}-ccache-
-      - name: Install chocolatey packages (python, curl, nasm, 7zip, llvm)
+
+      - name: Install Chocolatey packages
         shell: pwsh
         run: |
           choco feature enable -n allowGlobalConfirmation
           choco install -y python --no-progress
-          choco install -y curl --no-progress
           choco install -y nasm --no-progress
           choco install -y 7zip --no-progress
-          choco install -y llvm --no-progress
 
-      - name: Ensure MSVC Developer Command Prompt is available
+      - name: Install Visual Studio C++ Clang Tools
+        shell: pwsh
+        run: |
+          $vsInstallerPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vs_installer.ps1"
+          & $vsInstallerPath modify --installPath "${env:ProgramFiles}\Microsoft Visual Studio\2022\Enterprise" `
+            --add Microsoft.VisualStudio.Component.VC.ClangC2 `
+            --quiet --norestart --wait
+          Write-Host "Visual Studio Clang tools component installed."
+
+      - name: Setup MSVC Developer Command Prompt
         uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: x64
 
-      - name: Add msbuild to PATH (optional helper)
-        uses: microsoft/setup-msbuild@v1
-
-      - name: Download & extract ccache (Windows binary)
+      - name: Download & extract ccache
         shell: pwsh
         run: |
           $ccacheVer = $Env:CCACHE_VERSION
-          $zip = "$Env:RUNNER_TEMP\ccache-$ccacheVer.zip"
+          $zip = "$Env:RUNNER_TEMP\ccache.zip"
           Invoke-WebRequest -Uri "https://github.com/ccache/ccache/releases/download/v$ccacheVer/ccache-$ccacheVer-windows-x86_64.zip" -OutFile $zip
-          Expand-Archive -Path $zip -DestinationPath "$Env:RUNNER_TEMP\ccache" -Force
-          Write-Host "ccache extracted to $Env:RUNNER_TEMP\ccache"
+          Expand-Archive -Path $zip -DestinationPath "$Env:RUNNER_TEMP\ccache-dist" -Force
+          Write-Host "ccache extracted to $Env:RUNNER_TEMP\ccache-dist"
 
-      - name: Prepare include\node\cl.exe wrappers for vcbuild
+      - name: Prepare ccache compiler wrapper
         shell: pwsh
         run: |
-          $work = "${{ github.workspace }}"
-          $nodeDir = Join-Path $work "include\node"
-          $clWrapperDir = Join-Path $nodeDir "cl.exe"
+          $wrapperDir = "$Env:RUNNER_TEMP\compiler-wrapper"
+          New-Item -ItemType Directory -Force -Path $wrapperDir
 
-          New-Item -ItemType Directory -Force -Path $clWrapperDir | Out-Null
-
-          $clangSrc = Join-Path $Env:LLVM_INSTALL_DIR "bin\clang-cl.exe"
-          if (-Not (Test-Path $clangSrc)) {
-            Write-Error "clang-cl not found at $clangSrc; make sure LLVM installed. Aborting."
+          $ccacheExe = Get-ChildItem "$Env:RUNNER_TEMP\ccache-dist\**\ccache.exe" -Recurse | Select-Object -First 1
+          if (-not $ccacheExe) {
+            Write-Error "ccache.exe not found. Aborting."
             exit 1
           }
-          Copy-Item -Path $clangSrc -Destination (Join-Path $clWrapperDir "clang-cl.exe") -Force
+          Copy-Item -Path $ccacheExe.FullName -Destination (Join-Path $wrapperDir "cl.exe") -Force
 
-          $foundCcache = Get-ChildItem "$Env:RUNNER_TEMP\ccache\**\ccache.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
-          if (-not $foundCcache) {
-            Write-Error "ccache.exe not found in extracted archive; aborting."
+          $vsDir = "${env:ProgramFiles}\Microsoft Visual Studio\2022\Enterprise"
+          $clangClExe = Get-ChildItem -Path "$vsDir\VC\Tools\Llvm\**\clang-cl.exe" -Recurse | Select-Object -First 1
+          if (-not $clangClExe) {
+            Write-Error "clang-cl.exe not found in Visual Studio directory. Aborting."
             exit 1
           }
-          Copy-Item -Path $foundCcache.FullName -Destination (Join-Path $clWrapperDir "cl.exe") -Force
 
-          Add-Content -Path $Env:GITHUB_ENV -Value ("CCACHE_COMPILER={0}" -f (Join-Path $clWrapperDir "clang-cl.exe"))
+          Add-Content -Path $Env:GITHUB_ENV -Value "CCACHE_COMPILER=$($clangClExe.FullName)"
 
-          Write-Host "Prepared $clWrapperDir with:"
-          Get-ChildItem -Path $clWrapperDir | ForEach-Object { Write-Host " - $($_.FullName)" }
+          Add-Content -Path $Env:GITHUB_PATH -Value $wrapperDir
 
-      - name: Build libnode (Windows host - MSVC)
+          Write-Host "Compiler wrapper directory prepared at $wrapperDir"
+          Write-Host "ccache will wrap: $($clangClExe.FullName)"
+
+      - name: Build libnode
         shell: pwsh
-        env:
-          GYP_MSVS_OVERRIDE_PATH: 'C:\Program Files\Microsoft Visual Studio\2022\Community'
         run: |
           cd include\node
-          .\vcbuild.bat x64 dll openssl-no-asm clang-cl ccache include\node\cl.exe
+          .\vcbuild.bat x64 dll openssl-no-asm clang-cl ccache
       - name: Create archive
         run: |
           cd include\node\out\Release
