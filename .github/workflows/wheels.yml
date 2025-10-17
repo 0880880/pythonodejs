@@ -141,7 +141,7 @@ jobs:
       - name: Install Visual Studio C++ Clang Tools
         shell: pwsh
         run: |
-          $vsInstallerPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vs_installer.ps1"
+          $vsInstallerPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vs_installer.exe"
           & $vsInstallerPath modify --installPath "${env:ProgramFiles}\Microsoft Visual Studio\2022\Enterprise" `
             --add Microsoft.VisualStudio.Component.VC.ClangC2 `
             --quiet --norestart --wait
