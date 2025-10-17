@@ -341,6 +341,7 @@ jobs:
           CIBW_BEFORE_ALL_WINDOWS: |
             pip install delvewheel
             xcopy /Y /I {package}\libs\windows\* C:\libnode\
+            dir C:\libnode
           CIBW_SKIP: "*-win32"
           CIBW_ARCHS_WINDOWS: AMD64
           CIBW_ENVIRONMENT_WINDOWS: |
