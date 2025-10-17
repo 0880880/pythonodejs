@@ -352,13 +352,12 @@ jobs:
           CIBW_BUILD: cp38-* cp39-* cp310-* cp311-* cp312-*
           CIBW_BEFORE_ALL_WINDOWS: |
             pip install delvewheel
-            Copy-Item {package}\libs\windows\* C:\libnode\ -Verbose
-            dir C:\libnode
+            Get-ChildItem {package}\libs\windows\
           CIBW_SKIP: "*-win32"
           CIBW_ARCHS_WINDOWS: AMD64
           CIBW_ENVIRONMENT_WINDOWS: |
-            LIBNODE_PATH=C:\libnode
-            PATH=C:\libnode;%PATH%
+            LIBNODE_PATH={package}\libs\windows
+            PATH={package}\libs\windows\;%PATH%
           CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: |
             delvewheel repair -w {dest_dir} {wheel} --add-path {package}\libs\windows\
       
