@@ -15,7 +15,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.ccache
-          key: ${{ runner.os }}-ccache-${{ hashFiles('**/*.cpp','**/*.h') }}-v2
+          key: ${{ runner.os }}-ccache-${{ hashFiles('**/*.cpp,**/*.h') }}-v2
           restore-keys: |
             ${{ runner.os }}-ccache-
       - uses: actions/checkout@v4
@@ -78,7 +78,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.ccache
-          key: ${{ matrix.os }}-${{ matrix.arch }}-ccache-${{ hashFiles('**/*.cpp','**/*.h') }}-v2
+          key: ${{ matrix.os }}-${{ matrix.arch }}-ccache-${{ hashFiles('**/*.cpp,**/*.h') }}-v2
           restore-keys: |
             ${{ matrix.os }}-${{ matrix.arch }}-ccache-
       - uses: actions/checkout@v4
@@ -129,7 +129,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .ccache
-          key: ${{ runner.os }}-ccache-${{ hashFiles('**/*.cpp','**/*.h') }}-v3
+          key: ${{ runner.os }}-ccache-${{ hashFiles('**/*.cpp,**/*.h') }}-v3
           restore-keys: |
             ${{ runner.os }}-ccache-
 
