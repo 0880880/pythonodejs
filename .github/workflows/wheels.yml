@@ -125,7 +125,7 @@ jobs:
       - name: Setup ccache cache
         uses: actions/cache@v4
         with:
-          path: ~\AppData\Local\ccache
+          path: C:\Users\runneradmin\AppData\Local\ccache
           key: ${{ runner.os }}-ccache-${{ github.sha }}-v3
           restore-keys: |
             ${{ runner.os }}-ccache-
@@ -187,6 +187,18 @@ jobs:
 
           Write-Host "Compiler wrapper directory prepared at $wrapperDir"
           Write-Host "ccache will wrap: $($clangClExe.FullName)"
+          
+          $u = Join-Path $env:USERPROFILE ".ccache"
+          $l = Join-Path $env:LOCALAPPDATA "ccache"
+
+          Write-Host "USERPROFILE: $u"
+          Write-Host "LOCALAPPDATA: $l"
+
+          if (Test-Path $u) { Write-Host "Found: $u" } else { Write-Host "Not found: $u" }
+          if (Test-Path $l) { Write-Host "Found: $l" } else { Write-Host "Not found: $l" }
+
+          Write-Host "CCACHE_DIR: $env:CCACHE_DIR"
+
 
       - name: Build libnode
         shell: pwsh
@@ -348,7 +360,7 @@ jobs:
             LIBNODE_PATH=C:\libnode
             PATH=C:\libnode;%PATH%
           CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: |
-            delvewheel repair -w {dest_dir} {wheel} --add-path C:\libnode
+            delvewheel repair -w {dest_dir} {wheel} --add-path {package}\libs\windows\
       
       - uses: actions/upload-artifact@v4
         with:
