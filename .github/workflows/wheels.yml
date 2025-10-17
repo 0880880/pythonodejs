@@ -356,6 +356,9 @@ jobs:
           CIBW_BEFORE_BUILD: dir {package}\libs\windows
           CIBW_SKIP: "*-win32"
           CIBW_ARCHS_WINDOWS: AMD64
+          CIBW_ENVIRONMENT_WINDOWS: |
+            LIBNODE_PATH=libs\\windows
+            PATH=libs\\windows;%PATH%
           CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: |
             delvewheel repair -w {dest_dir} {wheel} --add-path {package}\libs\windows\
       
