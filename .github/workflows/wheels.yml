@@ -119,21 +119,6 @@ jobs:
     env:
       CCACHE_VERSION: "4.12.1"
     steps:
-      - uses: actions/checkout@v4
-      - name: Configure ccache directory
-        shell: pwsh
-        run: |
-          $env:CCACHE_DIR = "$env:GITHUB_WORKSPACE\.ccache"
-          New-Item -ItemType Directory -Force -Path $env:CCACHE_DIR
-          Write-Host "CCACHE_DIR=$env:CCACHE_DIR"
-
-      - name: Setup ccache cache
-        uses: actions/cache@v4
-        with:
-          path: .ccache
-          key: ${{ runner.os }}-ccache-${{ hashFiles('pythonodejs/pythonodejs.cpp','pythonodejs/common.h') }}-v3
-          restore-keys: |
-            ${{ runner.os }}-ccache-
 
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -162,45 +147,6 @@ jobs:
         with:
           arch: x64
 
-      - name: Download & extract ccache
-        shell: pwsh
-        run: |
-          $ccacheVer = $Env:CCACHE_VERSION
-          $zip = "$Env:RUNNER_TEMP\ccache.zip"
-          Invoke-WebRequest -Uri "https://github.com/ccache/ccache/releases/download/v$ccacheVer/ccache-$ccacheVer-windows-x86_64.zip" -OutFile $zip
-          Expand-Archive -Path $zip -DestinationPath "$Env:RUNNER_TEMP\ccache-dist" -Force
-          Write-Host "ccache extracted to $Env:RUNNER_TEMP\ccache-dist"
-
-      - name: Prepare ccache compiler wrapper
-        shell: pwsh
-        run: |
-          $wrapperDir = "$Env:RUNNER_TEMP\compiler-wrapper"
-          New-Item -ItemType Directory -Force -Path $wrapperDir
-
-          $ccacheExe = Get-ChildItem "$Env:RUNNER_TEMP\ccache-dist\**\ccache.exe" -Recurse | Select-Object -First 1
-          if (-not $ccacheExe) {
-            Write-Error "ccache.exe not found. Aborting."
-            exit 1
-          }
-          Copy-Item -Path $ccacheExe.FullName -Destination (Join-Path $wrapperDir "cl.exe") -Force
-
-          $vsDir = "${env:ProgramFiles}\Microsoft Visual Studio\2022\Enterprise"
-          $clangClExe = Get-ChildItem -Path "$vsDir\VC\Tools\Llvm\**\clang-cl.exe" -Recurse | Select-Object -First 1
-          if (-not $clangClExe) {
-            Write-Error "clang-cl.exe not found in Visual Studio directory. Aborting."
-            exit 1
-          }
-
-          Add-Content -Path $Env:GITHUB_ENV -Value "CCACHE_COMPILER=$($clangClExe.FullName)"
-
-          Add-Content -Path $Env:GITHUB_PATH -Value $wrapperDir
-
-          Write-Host "Compiler wrapper directory prepared at $wrapperDir"
-          Write-Host "ccache will wrap: $($clangClExe.FullName)"
-          
-          $env:CCACHE_DIR = "$env:GITHUB_WORKSPACE\.ccache"
-          New-Item -ItemType Directory -Force -Path $env:CCACHE_DIR
-
 
       - name: Build libnode
         shell: pwsh
@@ -208,7 +154,7 @@ jobs:
           cd include\node
           $wrapperDir = "$Env:RUNNER_TEMP\compiler-wrapper"
           $wrapper = Join-Path $wrapperDir "cl.exe"
-          .\vcbuild.bat x64 dll openssl-no-asm clang-cl ccache $wrapper
+          .\vcbuild.bat x64 dll openssl-no-asm clang-cl
       - name: Create archive
         run: |
           cd include\node\out\Release
