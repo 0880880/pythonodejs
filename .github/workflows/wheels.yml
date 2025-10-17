@@ -11,6 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     container: quay.io/pypa/manylinux_2_28_x86_64
     steps:
+      - uses: actions/checkout@v4
       - name: Setup ccache
         uses: actions/cache@v4
         with:
@@ -74,6 +75,7 @@ jobs:
             os: macos-14  # Apple Silicon runner
             configure_flags: --ninja --shared
     steps:
+      - uses: actions/checkout@v4
       - name: Setup ccache
         uses: actions/cache@v4
         with:
@@ -117,7 +119,7 @@ jobs:
     env:
       CCACHE_VERSION: "4.12.1"
     steps:
-
+      - uses: actions/checkout@v4
       - name: Configure ccache directory
         shell: pwsh
         run: |
