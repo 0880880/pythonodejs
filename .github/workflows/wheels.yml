@@ -11,16 +11,16 @@ jobs:
     runs-on: ubuntu-latest
     container: quay.io/pypa/manylinux_2_28_x86_64
     steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
       - name: Setup ccache
         uses: actions/cache@v4
         with:
           path: ~/.ccache
-          key: ${{ runner.os }}-ccache-${{ github.sha }}-v2
+          key: ${{ runner.os }}-ccache-${{ hashFiles('**/*.cpp','**/*.h') }}-v2
           restore-keys: |
             ${{ runner.os }}-ccache-
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Install deps & Setup
         run: |
           dnf update -y
@@ -74,16 +74,16 @@ jobs:
             os: macos-14  # Apple Silicon runner
             configure_flags: --ninja --shared
     steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
       - name: Setup ccache
         uses: actions/cache@v4
         with:
           path: ~/.ccache
-          key: ${{ matrix.os }}-${{ matrix.arch }}-ccache-${{ github.sha }}-v2
+          key: ${{ matrix.os }}-${{ matrix.arch }}-ccache-${{ hashFiles('**/*.cpp','**/*.h') }}-v2
           restore-keys: |
             ${{ matrix.os }}-${{ matrix.arch }}-ccache-
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Install Homebrew deps
         run: |
           /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" || true  
@@ -117,18 +117,26 @@ jobs:
     env:
       CCACHE_VERSION: "4.12.1"
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
+
+      - name: Configure ccache directory
+        shell: pwsh
+        run: |
+          $env:CCACHE_DIR = "$env:GITHUB_WORKSPACE\.ccache"
+          New-Item -ItemType Directory -Force -Path $env:CCACHE_DIR
+          Write-Host "CCACHE_DIR=$env:CCACHE_DIR"
 
       - name: Setup ccache cache
         uses: actions/cache@v4
         with:
-          path: C:\Users\runneradmin\AppData\Local\ccache
-          key: ${{ runner.os }}-ccache-${{ github.sha }}-v3
+          path: .ccache
+          key: ${{ runner.os }}-ccache-${{ hashFiles('**/*.cpp','**/*.h') }}-v3
           restore-keys: |
             ${{ runner.os }}-ccache-
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Install Chocolatey packages
         shell: pwsh
@@ -188,16 +196,8 @@ jobs:
           Write-Host "Compiler wrapper directory prepared at $wrapperDir"
           Write-Host "ccache will wrap: $($clangClExe.FullName)"
           
-          $u = Join-Path $env:USERPROFILE ".ccache"
-          $l = Join-Path $env:LOCALAPPDATA "ccache"
-
-          Write-Host "USERPROFILE: $u"
-          Write-Host "LOCALAPPDATA: $l"
-
-          if (Test-Path $u) { Write-Host "Found: $u" } else { Write-Host "Not found: $u" }
-          if (Test-Path $l) { Write-Host "Found: $l" } else { Write-Host "Not found: $l" }
-
-          Write-Host "CCACHE_DIR: $env:CCACHE_DIR"
+          $env:CCACHE_DIR = "$env:GITHUB_WORKSPACE\.ccache"
+          New-Item -ItemType Directory -Force -Path $env:CCACHE_DIR
 
 
       - name: Build libnode
