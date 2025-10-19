@@ -1,0 +1,91 @@
+Run pypa/cibuildwheel@v3.2.0
+Run actions/setup-python@v6
+Installed versions
+Run # Install cibuildwheel
+Install cibuildwheel
+Run & "D:\a\_temp\cibw\Scripts\cibuildwheel.exe" "." --output-dir "wheelhouse"  
+
+     _ _       _ _   _       _           _
+ ___|_| |_ _ _|_| |_| |_ _ _| |_ ___ ___| |
+|  _| | . | | | | | . | | | |   | -_| -_| |
+|___|_|___|___|_|_|___|_____|_|_|___|___|_|
+
+cibuildwheel version 3.2.0
+
+Build options:
+  platform: windows
+  allow_empty: False
+  architectures: AMD64
+  build_selector: 
+    build_config: cp38-* cp39-* cp310-* cp311-* cp312-*
+    skip_config: *-win32
+    requires_python: >=3.8
+    enable: []
+  output_dir: D:\a\pythonodejs\pythonodejs\wheelhouse
+  package_dir: D:\a\pythonodejs\pythonodejs
+  test_selector: 
+    skip_config:
+  before_all: pip install delvewheel
+  before_build: dir {package}\libs\windows
+  before_test: 
+  build_frontend: build
+  build_verbosity: 0
+  config_settings: 
+  container_engine: docker
+  dependency_constraints: pinned
+  environment: 
+    LIBNODE_PATH=libs\\windows
+  manylinux_images: None
+  musllinux_images: None
+  pyodide_version: None
+  repair_command: 
+    delvewheel repair -w {dest_dir} {wheel} --add-path {package}\libs\windows\
+  test_command: 
+  test_environment: 
+  test_extras: 
+  test_groups: 
+  test_requires: 
+  test_sources: 
+  xbuild_tools: None
+
+Cache folder: C:\Users\runneradmin\AppData\Local\pypa\cibuildwheel\Cache
+
+Here we go!
+
+Running before_all...
+                                                              ✓ 8.46s
+
+Building cp38-win_amd64 wheel
+CPython 3.8 Windows 64bit
+
+Installing Python cp38...
+                                                             ✓ 18.75s
+Setting up build environment...
+                                                             ✓ 15.10s
+Installing build tools...
+                                                              ✓ 7.33s
+Running before_build...
+                                                              ✓ 0.01s
+Building wheel...
+                                                             ✓ 78.46s
+Repairing wheel...
+  
+  + delvewheel repair -w C:\Users\runneradmin\AppData\Local\Temp\cibw-run-b76g5omo\cp38-win_amd64\repaired_wheel C:\Users\runneradmin\AppData\Local\Temp\cibw-run-b76g5omo\cp38-win_amd64\built_wheel\pythonodejs-0.1.0-cp38-cp38-win_amd64.whl --add-path {package}\libs\windows\
+  
+  Traceback (most recent call last):
+    File "C:\hostedtoolcache\windows\Python\3.9.13\x64\lib\runpy.py", line 197, in _run_module_as_main
+      return _run_code(code, main_globals, None,
+    File "C:\hostedtoolcache\windows\Python\3.9.13\x64\lib\runpy.py", line 87, in _run_code
+      exec(code, run_globals)
+    File "C:\hostedtoolcache\windows\Python\3.9.13\x64\Scripts\delvewheel.exe\__main__.py", line 6, in <module>
+    File "C:\hostedtoolcache\windows\Python\3.9.13\x64\lib\site-packages\delvewheel\__main__.py", line 104, in main
+      wr.repair(args.target, no_mangles, args.no_mangle_all, args.with_mangle, args.strip, args.lib_sdir, not args.no_diagnostic and 'SOURCE_DATE_EPOCH' not in os.environ, namespace_pkgs, args.include_symbols, args.include_imports, args.custom_patch)
+    File "C:\hostedtoolcache\windows\Python\3.9.13\x64\lib\site-packages\delvewheel\_wheel_repair.py", line 848, in repair
+      discovered, associated, ignored = _dll_utils.get_all_needed(executable_path, self._exclude, self._wheel_dirs, 'raise', include_symbols, include_imports)[:3]
+    File "C:\hostedtoolcache\windows\Python\3.9.13\x64\lib\site-packages\delvewheel\_dll_utils.py", line 446, in get_all_needed
+      raise FileNotFoundError(f'Unable to find library: {dll_name}')
+  FileNotFoundError: Unable to find library: libnode.dll
+  repairing C:\Users\runneradmin\AppData\Local\Temp\cibw-run-b76g5omo\cp38-win_amd64\built_wheel\pythonodejs-0.1.0-cp38-cp38-win_amd64.whl
+  finding DLL dependencies
+  Error: cibuildwheel: Command delvewheel repair -w C:\Users\runneradmin\AppData\Local\Temp\cibw-run-b76g5omo\cp38-win_amd64\repaired_wheel C:\Users\runneradmin\AppData\Local\Temp\cibw-run-b76g5omo\cp38-win_amd64\built_wheel\pythonodejs-0.1.0-cp38-cp38-win_amd64.whl --add-path {package}\libs\windows\
+   failed with code 1. 

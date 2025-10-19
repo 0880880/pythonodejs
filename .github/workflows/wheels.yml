@@ -308,7 +308,7 @@ jobs:
             LIBNODE_PATH=libs\\windows
             PATH=libs\\windows;%PATH%
           CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: |
-            delvewheel repair -w {dest_dir} {wheel} --add-path {package}\libs\windows\
+            delvewheel repair -w {dest_dir} {wheel} --add-path .\libs\windows
       
       - uses: actions/upload-artifact@v4
         with:
