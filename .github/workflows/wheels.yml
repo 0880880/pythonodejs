@@ -97,8 +97,9 @@ jobs:
       - name: Build libnode
         run: |
           export CC="ccache clang"
-          export CXX="ccache clang++ -std=c++20"
+          export CXX="ccache clang++"
           export CXXFLAGS="-std=c++20"
+          export LDFLAGS="-lc++"
           cd include/node
           ./configure ${{ matrix.configure_flags }}
           make
