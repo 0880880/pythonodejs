@@ -312,3 +312,21 @@ jobs:
         with:
           name: wheels-windows
           path: ./wheelhouse/*.whl
+
+  # publish-wheels:
+  #   name: Publish wheels
+  #   needs: [build-wheels-linux, build-wheels-macos, build-wheels-windows]
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Download wheels
+  #       uses: actions/download-artifact@v5
+  #       with:
+  #         name: wheels-linux wheels-macos-x86_64 wheels-macos-arm64 wheels-windows
+  #         path: ./wheelhouse
+
+  #     - name: Delete all artifacts
+  #       uses: geekyeggo/delete-artifact@v5
+  #       with:
+  #         name: |
+  #           wheels-*
+  #           libnode-*
