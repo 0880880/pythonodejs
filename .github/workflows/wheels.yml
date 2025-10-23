@@ -75,6 +75,14 @@ jobs:
             os: macos-14  # Apple Silicon runner
             configure_flags: --ninja --shared
     steps:
+      - name: Install Homebrew deps
+        run: |
+          /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" || true
+          brew install cmake ninja llvm@19 || true
+          echo "$(brew --prefix llvm@19)/bin" >> $GITHUB_PATH
+          curl -L https://github.com/ccache/ccache/releases/download/v4.12.1/ccache-4.12.1-darwin.tar.gz | tar xz
+          sudo cp ccache-4.12.1-darwin/ccache /usr/local/bin/
+          ccache --version
       - uses: actions/checkout@v4
       - name: Setup ccache
         uses: actions/cache@v4
@@ -86,14 +94,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-      - name: Install Homebrew deps
-        run: |
-          /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" || true
-          brew install cmake ninja llvm@19 || true
-          echo "$(brew --prefix llvm@19)/bin" >> $GITHUB_PATH
-          curl -L https://github.com/ccache/ccache/releases/download/v4.12.1/ccache-4.12.1-darwin.tar.gz | tar xz
-          sudo cp ccache-4.12.1-darwin/ccache /usr/local/bin/
-          ccache --version
       - name: Build libnode
         run: |
           export CC="ccache clang"
@@ -189,7 +189,7 @@ jobs:
       - name: Build wheels
         uses: pypa/cibuildwheel@v3.2.0
         env:
-          CIBW_BUILD: cp38-* cp39-* cp310-* cp311-* cp312-*
+          CIBW_BUILD: cp39-* cp310-* cp311-* cp312-* cp313-*
           CIBW_SKIP: "*-musllinux_*"
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
           CIBW_BEFORE_ALL_LINUX: |
@@ -254,7 +254,7 @@ jobs:
         uses: pypa/cibuildwheel@v3.2.0
         env:
           MACOSX_DEPLOYMENT_TARGET: 10.15
-          CIBW_BUILD: cp38-* cp39-* cp310-* cp311-* cp312-*
+          CIBW_BUILD: cp39-* cp310-* cp311-* cp312-* cp313-*
           CIBW_ARCHS_MACOS: ${{ matrix.cibw_arch }}
           CIBW_BEFORE_ALL_MACOS: |
             mkdir -p $HOME/lib
@@ -298,7 +298,7 @@ jobs:
       - name: Build wheels
         uses: pypa/cibuildwheel@v3.2.0
         env:
-          CIBW_BUILD: cp38-* cp39-* cp310-* cp311-* cp312-*
+          CIBW_BUILD: cp39-* cp310-* cp311-* cp312-* cp313-*
           CIBW_BEFORE_ALL_WINDOWS: pip install delvewheel
           CIBW_BEFORE_BUILD: dir {package}\libs\windows
           CIBW_SKIP: "*-win32"
