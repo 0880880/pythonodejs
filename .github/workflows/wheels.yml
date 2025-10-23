@@ -191,7 +191,7 @@ jobs:
       - name: Build wheels
         uses: pypa/cibuildwheel@v3.2.0
         env:
-          CIBW_BUILD: cp39-* cp310-* cp311-* cp312-* cp313-*
+          CIBW_BUILD: cp39-* cp310-* cp311-* cp312-*
           CIBW_SKIP: "*-musllinux_*"
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
           CIBW_BEFORE_ALL_LINUX: |
@@ -255,8 +255,8 @@ jobs:
       - name: Build wheels
         uses: pypa/cibuildwheel@v3.2.0
         env:
-          MACOSX_DEPLOYMENT_TARGET: 10.15
-          CIBW_BUILD: cp39-* cp310-* cp311-* cp312-* cp313-*
+          MACOSX_DEPLOYMENT_TARGET: 13.5
+          CIBW_BUILD: cp39-* cp310-* cp311-* cp312-*
           CIBW_ARCHS_MACOS: ${{ matrix.cibw_arch }}
           CIBW_BEFORE_ALL_MACOS: |
             mkdir -p $HOME/lib
@@ -300,7 +300,7 @@ jobs:
       - name: Build wheels
         uses: pypa/cibuildwheel@v3.2.0
         env:
-          CIBW_BUILD: cp39-* cp310-* cp311-* cp312-* cp313-*
+          CIBW_BUILD: cp39-* cp310-* cp311-* cp312-*
           CIBW_BEFORE_ALL_WINDOWS: pip install delvewheel
           CIBW_BEFORE_BUILD: dir {package}\libs\windows
           CIBW_SKIP: "*-win32"
