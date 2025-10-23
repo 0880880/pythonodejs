@@ -772,4 +772,6 @@ PyMODINIT_FUNC PyInit_pythonodejs(void)
         Py_DECREF(m);
         return NULL;
     }
+
+    return m;
 }
