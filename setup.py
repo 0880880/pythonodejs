@@ -57,7 +57,7 @@ elif system == "Windows":
         library_dirs = [libnode_path]
 
 pythonodejs_extension = Extension(
-    "pythonodejs.pythonodejs",
+    "pythonodejs",
     sources=["pythonodejs/pythonodejs.cpp"],
     include_dirs=include_dirs,
     library_dirs=library_dirs,
