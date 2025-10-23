@@ -23,7 +23,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.ccache
-          key: ${{ runner.os }}-ccache-${NODE_HASH}
+          key: ${{ runner.os }}-ccache-${{ env.NODE_HASH }}
           restore-keys: |
             ${{ runner.os }}-ccache-
       - name: Install deps & Setup
@@ -101,7 +101,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.ccache
-          key: ${{ matrix.os }}-${{ matrix.arch }}-ccache-${NODE_HASH}
+          key: ${{ matrix.os }}-${{ matrix.arch }}-ccache-${{ env.NODE_HASH }}
           restore-keys: |
             ${{ matrix.os }}-${{ matrix.arch }}-ccache-
       - name: Build libnode
