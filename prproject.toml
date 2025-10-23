@@ -7,7 +7,7 @@ name = "pythonodejs"
 version = "2.0.0a1"
 description = "Python-NodeJS interop library"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 license = { text = "MIT" }
 authors = [{ name = "0880" }]
 

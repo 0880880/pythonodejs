@@ -69,7 +69,7 @@ pythonodejs_extension = Extension(
 
 setup(
     name="pythonodejs",
-    version="0.1.0",
+    version="2.0.0a1",
     description="Python-NodeJS interop library",
     author="0880",
     ext_modules=[pythonodejs_extension],
