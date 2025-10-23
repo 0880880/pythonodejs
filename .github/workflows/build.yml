@@ -12,16 +12,18 @@ jobs:
     container: quay.io/pypa/manylinux_2_28_x86_64
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Get node hash
+        run: |
+          echo "NODE_HASH=$(git rev-parse HEAD:include/node)" >> $GITHUB_ENV
       - name: Setup ccache
         uses: actions/cache@v4
         with:
           path: ~/.ccache
-          key: ${{ runner.os }}-ccache-${{ hashFiles('pythonodejs/pythonodejs.cpp','pythonodejs/common.h') }}-v2
+          key: ${{ runner.os }}-ccache-${NODE_HASH}
           restore-keys: |
             ${{ runner.os }}-ccache-
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
       - name: Install deps & Setup
         run: |
           dnf update -y
@@ -86,16 +88,18 @@ jobs:
           mkdir ~/.ccache
           export CCACHE_DIR=~/.ccache
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Get node hash
+        run: |
+          echo "NODE_HASH=$(git rev-parse HEAD:include/node)" >> $GITHUB_ENV
       - name: Setup ccache
         uses: actions/cache@v4
         with:
           path: ~/.ccache
-          key: ${{ matrix.os }}-${{ matrix.arch }}-ccache-${{ hashFiles('pythonodejs/pythonodejs.cpp','pythonodejs/common.h') }}-v2
+          key: ${{ matrix.os }}-${{ matrix.arch }}-ccache-${NODE_HASH}
           restore-keys: |
             ${{ matrix.os }}-${{ matrix.arch }}-ccache-
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
       - name: Build libnode
         run: |
           export CC="ccache clang"
