@@ -83,6 +83,8 @@ jobs:
           curl -L https://github.com/ccache/ccache/releases/download/v4.12.1/ccache-4.12.1-darwin.tar.gz | tar xz
           sudo cp ccache-4.12.1-darwin/ccache /usr/local/bin/
           ccache --version
+          mkdir ~/.ccache
+          export CCACHE_DIR=~/.ccache
       - uses: actions/checkout@v4
       - name: Setup ccache
         uses: actions/cache@v4
