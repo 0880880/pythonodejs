@@ -218,7 +218,7 @@ NodeEnv* NodeEnvCreate(const char* absolute_path)
     node->loop = setup->event_loop();
 
     {
-        V8Scope scope(isolate);
+        V8Scope scope(node);
         Local<Context> context = setup->context();
         string import_name = "import_" + random_string(6);
         MaybeLocal<Value> ret = _nodejs::LoadEnvironment(env,
