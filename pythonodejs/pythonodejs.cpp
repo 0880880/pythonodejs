@@ -247,7 +247,7 @@ NodeEnv* NodeEnvCreate(const char* absolute_path)
 
     new (&node->promises) map<int, Global<Promise>>();
 
-    return nullptr;
+    return node;
 }
 
 PyObject* JSToPy(NodeEnv* node, Local<Value> value);
