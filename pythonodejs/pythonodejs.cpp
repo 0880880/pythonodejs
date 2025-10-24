@@ -226,8 +226,8 @@ NodeEnv* NodeEnvCreate(const char* absolute_path)
         string import_name = "import_" + random_string(6);
         MaybeLocal<Value> ret = _nodejs::LoadEnvironment(env,
             "function " + import_name + "(s) { return import(s); }"
-                                        "const publicRequire = require('module').createRequire("
-                + absolute_path + ");"
+                                        "const publicRequire = require('module').createRequire(\""
+                + absolute_path + "\");"
                                   "globalThis.require = publicRequire;"
                                   "return {'import': "
                 + import_name + ", 'require': publicRequire, 'runInThisContext': require('vm').runInThisContext};");
