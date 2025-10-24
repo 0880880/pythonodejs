@@ -236,9 +236,12 @@ NodeEnv* NodeEnvCreate(const char* absolute_path)
             return nullptr;
         }
         Local<Object> dict = Local<Object>::Cast(ret.ToLocalChecked());
-        node->import = Global<Function>(isolate, Local<Function>::Cast(GetValueByKey(context, isolate, dict, "import")));
-        node->require = Global<Function>(isolate, Local<Function>::Cast(GetValueByKey(context, isolate, dict, "require")));
-        node->runInThisContext = Global<Function>(isolate, Local<Function>::Cast(GetValueByKey(context, isolate, dict, "runInThisContext")));
+        Local<Function> import_func = Local<Function>::Cast(GetValueByKey(context, isolate, dict, "import"));
+        Local<Function> require_func = Local<Function>::Cast(GetValueByKey(context, isolate, dict, "require"));
+        Local<Function> runInThisContext_func = Local<Function>::Cast(GetValueByKey(context, isolate, dict, "runInThisContext"));
+        node->import.Reset(isolate, import_func);
+        node->require.Reset(isolate, require_func);
+        node->runInThisContext.Reset(isolate, runInThisContext_func);
     }
 
     new (&node->promises) map<int, Global<Promise>>();
@@ -413,7 +416,7 @@ Local<Value> PyToJS(NodeEnv* node, PyObject* value)
         if (!data)
             return Null(node->isolate);
         data->node = node;
-        data->js_resolver = Global<Promise::Resolver>(node->isolate, resolver);
+        data->js_resolver.Reset(node->isolate, resolver);
         // TODO Must register this global for cleanup
 
         PyObject* capsule = PyCapsule_New(data, "promise_data", NULL);
@@ -507,7 +510,7 @@ PyObject* JSToPy(NodeEnv* node, Local<Value> value)
         if (!data)
             return NULL;
         data->node = node;
-        data->js_func = Global<Function>(node->isolate, js_func);
+        data->js_func.Reset(node->isolate, js_func);
         // TODO Must register this global for cleanup
 
         PyObject* capsule = PyCapsule_New(data, "func_data", NULL);
