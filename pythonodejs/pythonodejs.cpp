@@ -217,6 +217,10 @@ NodeEnv* NodeEnvCreate(const char* absolute_path)
     node->env = env;
     node->loop = setup->event_loop();
 
+    new (&node->import) Global<Function>();
+    new (&node->require) Global<Function>();
+    new (&node->runInThisContext) Global<Function>();
+
     {
         v8::Locker locker(isolate);
         v8::Isolate::Scope isolate_scope(isolate);
@@ -416,6 +420,7 @@ Local<Value> PyToJS(NodeEnv* node, PyObject* value)
         if (!data)
             return Null(node->isolate);
         data->node = node;
+        new (&data->js_resolver) Global<Promise::Resolver>();
         data->js_resolver.Reset(node->isolate, resolver);
         // TODO Must register this global for cleanup
 
@@ -510,6 +515,7 @@ PyObject* JSToPy(NodeEnv* node, Local<Value> value)
         if (!data)
             return NULL;
         data->node = node;
+        new (&data->js_func) Global<Function>();
         data->js_func.Reset(node->isolate, js_func);
         // TODO Must register this global for cleanup
 
