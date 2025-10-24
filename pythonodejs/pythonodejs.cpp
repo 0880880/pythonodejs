@@ -198,7 +198,7 @@ void NodeInit(int thread_pool_size)
             node::ProcessInitializationFlags::kNoInitializeCppgc,
         });
 
-    std::unique_ptr<MultiIsolatePlatform> platform = MultiIsolatePlatform::Create(thread_pool_size);
+    platform = MultiIsolatePlatform::Create(thread_pool_size);
     V8::InitializePlatform(platform.get());
     cppgc::InitializeProcess(platform->GetPageAllocator());
     V8::Initialize();
