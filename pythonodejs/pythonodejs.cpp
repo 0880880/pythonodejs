@@ -130,13 +130,6 @@ void SpinEventLoopSync(Environment* env, bool until_idle)
 
 class V8Scope {
 public:
-    V8Scope(Isolate* isolate, Local<Context> context)
-        : locker_(isolate)
-        , isolate_scope_(isolate)
-        , handle_scope_(isolate)
-        , context_scope_(context)
-    {
-    }
     V8Scope(NodeEnv* node)
         : locker_(node->isolate)
         , isolate_scope_(node->isolate)
@@ -225,7 +218,7 @@ NodeEnv* NodeEnvCreate(const char* absolute_path)
     node->loop = setup->event_loop();
 
     {
-        V8Scope scope(isolate, context);
+        V8Scope scope(isolate);
         Local<Context> context = setup->context();
         string import_name = "import_" + random_string(6);
         MaybeLocal<Value> ret = _nodejs::LoadEnvironment(env,
