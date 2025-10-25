@@ -593,6 +593,18 @@ void PollAsync(NodeEnv* node)
 
 void NodeEnvFree(NodeEnv* node)
 {
+    if (!node) {
+        fprintf(stderr, "Failed to free Node environment: node is null\n");
+        return;
+    }
+    if (!node->isolate) {
+        fprintf(stderr, "Failed to free Node environment: isolate is null\n");
+        return;
+    }
+    if (node->isolate->IsInUse()) {
+        fprintf(stderr, "Failed to free Node environment: isolate is in use\n");
+        return;
+    }
     {
         V8Scope scope(node);
         _nodejs::SpinEventLoop(node->env);
