@@ -212,18 +212,18 @@ NodeEnv* NodeEnvCreate(const char* absolute_path)
     auto setup = CommonEnvironmentSetup::Create(platform.get(), &errors, args, exec_args);
     NodeEnv* node = new NodeEnv();
     node->setup = std::move(setup);
-    Isolate* isolate = setup->isolate();
-    Environment* env = setup->env();
+    Isolate* isolate = node->setup->isolate();
+    Environment* env = node->setup->env();
     node->isolate = isolate;
     node->env = env;
-    node->loop = setup->event_loop();
+    node->loop = node->setup->event_loop();
 
     {
         v8::Locker locker(isolate);
         v8::Isolate::Scope isolate_scope(isolate);
         v8::HandleScope handle_scope(isolate);
-        Local<v8::Context> context = setup->context();
-        v8::Context::Scope context_scope(setup->context());
+        Local<v8::Context> context = node->setup->context();
+        v8::Context::Scope context_scope(node->setup->context());
         string import_name = "import_" + random_string(6);
         MaybeLocal<Value> ret = _nodejs::LoadEnvironment(env,
             "function " + import_name + "(s) { return import(s); }"
