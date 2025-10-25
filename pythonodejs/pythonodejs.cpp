@@ -593,8 +593,11 @@ void PollAsync(NodeEnv* node)
 
 void NodeEnvFree(NodeEnv* node)
 {
-    _nodejs::SpinEventLoop(node->env);
-    _nodejs::Stop(node->env);
+    {
+        V8Scope scope(node);
+        _nodejs::SpinEventLoop(node->env);
+        _nodejs::Stop(node->env);
+    }
 }
 
 typedef struct {
