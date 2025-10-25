@@ -210,17 +210,13 @@ NodeEnv* NodeEnvCreate(const char* absolute_path)
 {
     vector<string> errors;
     auto setup = CommonEnvironmentSetup::Create(platform.get(), &errors, args, exec_args);
-    NodeEnv* node = (NodeEnv*)malloc(sizeof(NodeEnv));
+    NodeEnv* node = new NodeEnv();
+    node->setup = std::move(setup);
     Isolate* isolate = setup->isolate();
     Environment* env = setup->env();
-    node->setup = std::move(setup);
     node->isolate = isolate;
     node->env = env;
     node->loop = setup->event_loop();
-
-    new (&node->import) Global<Function>();
-    new (&node->require) Global<Function>();
-    new (&node->runInThisContext) Global<Function>();
 
     {
         v8::Locker locker(isolate);
@@ -248,8 +244,6 @@ NodeEnv* NodeEnvCreate(const char* absolute_path)
         node->require.Reset(isolate, require_func);
         node->runInThisContext.Reset(isolate, runInThisContext_func);
     }
-
-    new (&node->promises) map<int, Global<Promise>>();
 
     return node;
 }
@@ -650,7 +644,7 @@ static void NodeJS_dealloc(NodeJSObject* self)
 {
     node_instances--;
     NodeEnvFree(self->node);
-    free(self->node);
+    delete self->node;
     if (node_instances == 0) {
         NodeFree();
     }
