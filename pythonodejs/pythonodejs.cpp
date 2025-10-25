@@ -134,7 +134,7 @@ public:
         : locker_(node->isolate)
         , isolate_scope_(node->isolate)
         , handle_scope_(node->isolate)
-        , context_scope_(node->isolate->GetCurrentContext())
+        , context_scope_(node->setup->context())
     {
     }
 
@@ -602,8 +602,20 @@ void NodeEnvFree(NodeEnv* node)
     }
     {
         V8Scope scope(node);
-        _nodejs::SpinEventLoop(node->env);
-        _nodejs::Stop(node->env);
+        
+        node::SpinEventLoop(node->env);
+        node::Stop(node->env);
+    }
+    
+    {
+        v8::Locker locker(node->isolate);
+        v8::Isolate::Scope isolate_scope(node->isolate);
+        v8::HandleScope handle_scope(node->isolate);
+        
+        node->import.Reset();
+        node->require.Reset();
+        node->runInThisContext.Reset();
+        node->promises.clear();
     }
 }
 
