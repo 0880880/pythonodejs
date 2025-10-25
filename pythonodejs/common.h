@@ -26,6 +26,7 @@ typedef struct NodeEnv {
     Isolate* isolate;
     Environment* env;
     uv_loop_t* loop;
+    std::unique_ptr<node::CommonEnvironmentSetup> setup;
     Global<Function> import;
     Global<Function> require;
     Global<Function> runInThisContext;

@@ -213,6 +213,7 @@ NodeEnv* NodeEnvCreate(const char* absolute_path)
     NodeEnv* node = (NodeEnv*)malloc(sizeof(NodeEnv));
     Isolate* isolate = setup->isolate();
     Environment* env = setup->env();
+    node->setup = std::move(setup);
     node->isolate = isolate;
     node->env = env;
     node->loop = setup->event_loop();
