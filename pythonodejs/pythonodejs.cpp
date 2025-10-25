@@ -718,11 +718,11 @@ PyObject* NodeJS_import(NodeJSObject* self, PyObject* arg)
 }
 
 static PyMethodDef NodeJS_methods[] = {
-    { "eval_cjs", (PyCFunction)NodeJS_eval, METH_VARARGS,
+    { "eval_cjs", (PyCFunction)NodeJS_eval, METH_O,
         "Evaluates a piece of CJS code." },
-    { "require_cjs", (PyCFunction)NodeJS_require, METH_VARARGS,
+    { "require_cjs", (PyCFunction)NodeJS_require, METH_O,
         "Imports a CJS file." },
-    { "import_esm", (PyCFunction)NodeJS_import, METH_VARARGS,
+    { "import_esm", (PyCFunction)NodeJS_import, METH_O,
         "Imports an ES module." },
     { NULL, NULL, 0, NULL } // Sentinel
 };
