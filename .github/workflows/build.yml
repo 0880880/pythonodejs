@@ -3,6 +3,10 @@ name: Build wheels
 on:
   push:
     branches: [main, rewrite-cpython]
+    tags:
+      - "[0-9]+.[0-9]+.[0-9]+"
+      - "[0-9]+.[0-9]+.[0-9]+.beta[0-9]*"
+      - "[0-9]+.[0-9]+.[0-9]+a[0-9]*"
   pull_request:
 
 jobs:
@@ -196,6 +200,7 @@ jobs:
       - name: Build wheels
         uses: pypa/cibuildwheel@v3.2.0
         env:
+          SETUPTOOLS_SCM_PRETEND_VERSION: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
           CIBW_BUILD: cp39-* cp310-* cp311-* cp312-*
           CIBW_SKIP: "*-musllinux_*"
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
@@ -260,6 +265,7 @@ jobs:
       - name: Build wheels
         uses: pypa/cibuildwheel@v3.2.0
         env:
+          SETUPTOOLS_SCM_PRETEND_VERSION: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
           MACOSX_DEPLOYMENT_TARGET: 13.5
           CIBW_BUILD: cp39-* cp310-* cp311-* cp312-*
           CIBW_ARCHS_MACOS: ${{ matrix.cibw_arch }}
@@ -305,6 +311,7 @@ jobs:
       - name: Build wheels
         uses: pypa/cibuildwheel@v3.2.0
         env:
+          SETUPTOOLS_SCM_PRETEND_VERSION: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
           CIBW_BUILD: cp39-* cp310-* cp311-* cp312-*
           CIBW_BEFORE_ALL_WINDOWS: pip install delvewheel
           CIBW_BEFORE_BUILD: dir {package}\libs\windows
@@ -321,36 +328,37 @@ jobs:
           name: wheels-windows
           path: ./wheelhouse/*.whl
 
-  # publish-wheels:
-  #   name: Publish wheels
-  #   needs: [build-wheels-linux, build-wheels-macos, build-wheels-windows]
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Download wheels
-  #       uses: actions/download-artifact@v5
-  #       with:
-  #         name: wheels-linux wheels-macos-x86_64 wheels-macos-arm64 wheels-windows
-  #         path: ./wheelhouse
+  publish-wheels:
+    name: Publish wheels
+    if: startsWith(github.ref, 'refs/tags/') && !contains(github.ref, 'alpha') && !contains(github.ref, 'beta') && !contains(github.ref, 'rc')
+    needs: [build-wheels-linux, build-wheels-macos, build-wheels-windows]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download wheels
+        uses: actions/download-artifact@v5
+        with:
+          name: wheels-linux wheels-macos-x86_64 wheels-macos-arm64 wheels-windows
+          path: ./wheelhouse
 
-  #     - name: Set up Python
-  #       uses: actions/setup-python@v4
-  #       with:
-  #         python-version: "3.12"
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
 
-  #     - name: Install build tools
-  #       run: |
-  #         python -m pip install --upgrade pip build twine
+      - name: Install build tools
+        run: |
+          python -m pip install --upgrade pip build twine
 
-  #     - name: Publish to PyPI
-  #       env:
-  #         TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
-  #         TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-  #       run: |
-  #         python -m twine upload wheelhouse/*
+      - name: Publish to PyPI
+        env:
+          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+        run: |
+          python -m twine upload wheelhouse/*
 
-  #     - name: Delete all artifacts
-  #       uses: geekyeggo/delete-artifact@v5
-  #       with:
-  #         name: |
-  #           wheels-*
-  #           libnode-*
+      - name: Delete all artifacts
+        uses: geekyeggo/delete-artifact@v5
+        with:
+          name: |
+            wheels-*
+            libnode-*
