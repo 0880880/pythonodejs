@@ -27,3 +27,8 @@ archs = ["x86_64", "arm64"]
 
 [tool.cibuildwheel.windows]
 archs = ["AMD64"]
+
+[project.urls]
+Homepage = "https://github.com/0880880/pythonodejs"
+Repository = "https://github.com/0880880/pythonodejs"
+Issues = "https://github.com/0880880/pythonodejs/issues"
