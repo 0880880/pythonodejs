@@ -254,6 +254,7 @@ Local<Value> PyToJS(NodeEnv* node, PyObject* value);
 typedef struct {
     NodeEnv* node;
     Global<Function> js_func;
+    PyMethodDef* method_def;
 } JSFunctionData;
 
 typedef struct {
@@ -478,6 +479,18 @@ Local<Value> PyToJS(NodeEnv* node, PyObject* value)
         return Object::New(node->isolate, Null(node->isolate), keys.data(), values.data(), i);
     }
 }
+static void cleanup_js_func(PyObject* capsule) {
+    JSFunctionData* data = (JSFunctionData*)PyCapsule_GetPointer(capsule, "func_data");
+    if (data) {
+        data->js_func.Reset();
+        if (data->method_def) {
+            PyMem_Free((void*)data->method_def->ml_name);
+            PyMem_Free((void*)data->method_def->ml_doc);
+            PyMem_Free(data->method_def);
+        }
+        PyMem_Free(data);
+    }
+}
 
 PyObject* JSToPy(NodeEnv* node, Local<Value> value)
 {
@@ -520,9 +533,6 @@ PyObject* JSToPy(NodeEnv* node, Local<Value> value)
         data->node = node;
         new (&data->js_func) Global<Function>();
         data->js_func.Reset(node->isolate, js_func);
-        // TODO Must register this global for cleanup
-
-        PyObject* capsule = PyCapsule_New(data, "func_data", NULL);
 
         Local<String> name_str = js_func->GetName()->ToString(context).ToLocalChecked();
         String::Utf8Value name_utf8(node->isolate, name_str);
@@ -530,15 +540,24 @@ PyObject* JSToPy(NodeEnv* node, Local<Value> value)
         Local<String> source_str = js_func->ToString(context).ToLocalChecked();
         String::Utf8Value source_utf8(node->isolate, source_str);
 
+        char* name_copy = (char*)PyMem_Malloc(name_utf8.length() + 1);
+        strcpy(name_copy, *name_utf8);
+
+        std::string doc_str = "From NodeJS:\n" + std::string(*source_utf8);
+        char* doc_copy = (char*)PyMem_Malloc(doc_str.length() + 1);
+        strcpy(doc_copy, doc_str.c_str());
+
         PyMethodDef* def = (PyMethodDef*)PyMem_Malloc(sizeof(PyMethodDef));
-        def->ml_name = *name_utf8;
+        def->ml_name = name_copy;
         def->ml_meth = js_func_handler;
         def->ml_flags = METH_VARARGS;
-        def->ml_doc = ("From NodeJS:\n" + std::string(*source_utf8)).c_str();
+        def->ml_doc = doc_copy;
 
+        data->method_def = def; 
+
+        PyObject* capsule = PyCapsule_New(data, "func_data", cleanup_js_func);
         PyObject* func = PyCFunction_NewEx(def, capsule, NULL);
 
-        PyMem_Free(def);
         return func;
 
     } else if (value->IsArray() || value->IsSet()) { // Array
