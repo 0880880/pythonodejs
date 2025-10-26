@@ -86,7 +86,7 @@ jobs:
       - name: Install Homebrew deps
         run: |
           /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" || true
-          brew install cmake ninja llvm@19 || true
+          brew install llvm@19 || true
           echo "$(brew --prefix llvm@19)/bin" >> $GITHUB_PATH
           curl -L https://github.com/ccache/ccache/releases/download/v4.12.1/ccache-4.12.1-darwin.tar.gz | tar xz
           sudo cp ccache-4.12.1-darwin/ccache /usr/local/bin/
