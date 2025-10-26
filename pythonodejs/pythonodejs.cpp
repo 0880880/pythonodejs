@@ -386,6 +386,14 @@ Local<Value> PyToJS(NodeEnv* node, PyObject* value)
             arr->Set(context, i, PyToJS(node, PyList_GetItem(value, len))).Check();
         }
         return arr;
+    } else if (PyTuple_Check(value)) // Array
+    {
+        int len = PyTuple_Size(value);
+        Local<Array> arr = Array::New(node->isolate, len);
+        for (int i = 0; i < len; i++) {
+            arr->Set(context, i, PyToJS(node, PyTuple_GetItem(value, len))).Check();
+        }
+        return arr;
     } else if (PyDict_Check(value)) // Object
     {
         using v8::Name;
