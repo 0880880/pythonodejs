@@ -640,6 +640,7 @@ Local<Value> PyToJS(NodeEnv* node, PyObject* value)
     }
 }
 static void cleanup_js_func(PyObject* capsule)
+{
     JSFunctionData* data = (JSFunctionData*)PyCapsule_GetPointer(capsule, "func_data");
     if (data) {
         data->js_func.Reset();
