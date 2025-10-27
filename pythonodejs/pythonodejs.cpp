@@ -1,6 +1,8 @@
 #include "common.h"
 
 #include <Python.h>
+#include <cmath>
+#include <datetime.h>
 #include <random>
 #include <string>
 #include <vector>
@@ -420,6 +422,28 @@ Local<Value> PyToJS(NodeEnv* node, PyObject* value)
         using v8::Null;
         return Null(node->isolate);
 
+    } else if (PyDateTime_Check(value)) { // Date
+        int year = PyDateTime_GET_YEAR(value);
+        int month = PyDateTime_GET_MONTH(value);
+        int day = PyDateTime_GET_DAY(value);
+        int hour = PyDateTime_DATE_GET_HOUR(value);
+        int min = PyDateTime_DATE_GET_MINUTE(value);
+        int sec = PyDateTime_DATE_GET_SECOND(value);
+        // ms is missing
+
+        struct tm t;
+        t.tm_year = year - 1900;
+        t.tm_mon = month - 1;
+        t.tm_mday = day;
+        t.tm_hour = hour;
+        t.tm_min = min;
+        t.tm_sec = sec;
+        t.tm_isdst = -1;
+
+        time_t unix_time = mktime(&t);
+        double unix_ms = static_cast<double>(unix_time) * 1000;
+
+        return v8::Date::New(context, unix_ms).ToLocalChecked();
     } else if (PyList_Check(value)) // Array
     {
         int len = PyList_Size(value);
@@ -576,6 +600,26 @@ PyObject* JSToPy(NodeEnv* node, Local<Value> value)
         }
         PyErr_SetString(PyExc_RuntimeError, "JS Error");
         return NULL;
+    } else if (value->IsDate()) { // Date
+        Local<v8::Date> pd = value.As<v8::Date>();
+        double ms = pd->ValueOf();
+        time_t seconds = ms / 1000;
+        int microseconds = (int)(fmod(ms, 1000)) * 1000;
+
+        struct tm timeinfo;
+        if (gmtime_r(&seconds, &timeinfo) == NULL) {
+            PyErr_SetString(PyExc_ValueError, "Invalid timestamp");
+            return NULL;
+        }
+
+        return PyDateTime_FromDateAndTime(
+            timeinfo.tm_year + 1900,
+            timeinfo.tm_mon + 1,
+            timeinfo.tm_mday,
+            timeinfo.tm_hour,
+            timeinfo.tm_min,
+            timeinfo.tm_sec,
+            microseconds);
     } else if (value->IsFunction()) {
         Local<Function> js_func = value.As<Function>();
 
@@ -895,6 +939,8 @@ PyMODINIT_FUNC PyInit_pythonodejs(void)
     m = PyModule_Create(&node_mod);
     if (m == NULL)
         return NULL;
+
+    PyDateTime_IMPORT;
 
     Py_INCREF(&NodeJSType);
     if (PyModule_AddObject(m, "NodeJS", (PyObject*)&NodeJSType) < 0) {
