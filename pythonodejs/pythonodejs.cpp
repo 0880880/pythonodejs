@@ -263,6 +263,8 @@ typedef struct {
 typedef struct {
     NodeEnv* node;
     Global<Promise::Resolver> js_resolver;
+    PyMethodDef* method_def;
+    char* method_name;
 } JSPromiseData;
 
 typedef struct {
@@ -326,6 +328,19 @@ void py_func_handler(const FunctionCallbackInfo<Value>& args)
 
     PyObject* res = PyObject_CallObject(func, argv.data());
     args.GetReturnValue().Set(PyToJS(func_data->node, res));
+}
+
+static void cleanup_py_promise(PyObject* capsule)
+{
+    JSPromiseData* data = (JSPromiseData*)PyCapsule_GetPointer(capsule, "promise_data");
+    if (data) {
+        data->js_resolver.Reset();
+        if (data->method_name)
+            PyMem_Free(data->method_name);
+        if (data->method_def)
+            PyMem_Free(data->method_def);
+        PyMem_Free(data);
+    }
 }
 
 int is_coroutine_like(PyObject* obj)
@@ -481,8 +496,14 @@ Local<Value> PyToJS(NodeEnv* node, PyObject* value)
         if (!asyncio)
             return Null(node->isolate);
 
-        v8::Local<v8::Promise::Resolver> resolver = v8::Promise::Resolver::New(node->isolate->GetCurrentContext()).ToLocalChecked();
+        v8::Local<v8::Context> context = node->isolate->GetCurrentContext();
+        v8::MaybeLocal<v8::Promise::Resolver> maybe_resolver = v8::Promise::Resolver::New(context);
+        if (maybe_resolver.IsEmpty()) {
+            Py_DECREF(asyncio);
+            return v8::Null(node->isolate);
+        }
 
+        v8::Local<v8::Promise::Resolver> resolver = maybe_resolver.ToLocalChecked();
         v8::Local<v8::Promise> promise = resolver->GetPromise();
 
         JSPromiseData* data = (JSPromiseData*)PyMem_Malloc(sizeof(JSPromiseData));
@@ -491,32 +512,106 @@ Local<Value> PyToJS(NodeEnv* node, PyObject* value)
         data->node = node;
         new (&data->js_resolver) Global<Promise::Resolver>();
         data->js_resolver.Reset(node->isolate, resolver);
-        // TODO Must register this global for cleanup
 
-        PyObject* capsule = PyCapsule_New(data, "promise_data", NULL);
+        PyObject* capsule = PyCapsule_New(data, "promise_data", cleanup_py_promise);
+        if (!capsule) {
+            data->js_resolver.Reset();
+            PyMem_Free(data);
+            Py_DECREF(asyncio);
+            return v8::Null(node->isolate);
+        }
 
         PyMethodDef* def = (PyMethodDef*)PyMem_Malloc(sizeof(PyMethodDef));
-        def->ml_name = ("callback_" + random_string(12)).c_str();
+        if (!def) {
+            Py_DECREF(capsule); // This will trigger destructor
+            Py_DECREF(asyncio);
+            return v8::Null(node->isolate);
+        }
+
+        std::string name_str = "callback_" + random_string(12);
+        char* name_copy = (char*)PyMem_Malloc(name_str.length() + 1);
+        if (!name_copy) {
+            PyMem_Free(def);
+            Py_DECREF(capsule);
+            Py_DECREF(asyncio);
+            return v8::Null(node->isolate);
+        }
+        strcpy(name_copy, name_str.c_str());
+
+        def->ml_name = name_copy;
         def->ml_meth = js_promise_handler;
         def->ml_flags = METH_VARARGS;
         def->ml_doc = "";
+        data->method_def = def;
+        data->method_name = name_copy;
 
         PyObject* callback = PyCFunction_NewEx(def, capsule, NULL);
 
-        PyMem_Free(def);
+        PyMem_Free(capsule);
+
+        if (!callback) {
+            PyMem_Free(name_copy);
+            PyMem_Free(def);
+            Py_DECREF(asyncio);
+            return v8::Null(node->isolate);
+        }
 
         PyObject* get_event_loop = PyObject_GetAttrString(asyncio, "get_event_loop");
+        if (!get_event_loop) {
+            PyErr_Print();
+            Py_DECREF(callback);
+            PyMem_Free(name_copy);
+            PyMem_Free(def);
+            Py_DECREF(asyncio);
+            return v8::Null(node->isolate);
+        }
+
         PyObject* loop = PyObject_CallObject(get_event_loop, NULL);
-        Py_XDECREF(get_event_loop);
+        Py_DECREF(get_event_loop);
+
+        if (!loop) {
+            PyErr_Print();
+            Py_DECREF(callback);
+            PyMem_Free(name_copy);
+            PyMem_Free(def);
+            Py_DECREF(asyncio);
+            return v8::Null(node->isolate);
+        }
 
         PyObject* ensure_future = PyObject_GetAttrString(asyncio, "ensure_future");
-        PyObject* task = PyObject_CallFunctionObjArgs(ensure_future, value, NULL);
-        Py_XDECREF(ensure_future);
+        if (!ensure_future) {
+            PyErr_Print();
+            Py_DECREF(loop);
+            Py_DECREF(callback);
+            PyMem_Free(name_copy);
+            PyMem_Free(def);
+            Py_DECREF(asyncio);
+            return v8::Null(node->isolate);
+        }
 
-        PyObject_CallMethod(task, "add_done_callback", "O", callback);
-        Py_XDECREF(task);
-        Py_XDECREF(loop);
-        Py_XDECREF(asyncio);
+        PyObject* task = PyObject_CallFunctionObjArgs(ensure_future, value, NULL);
+        Py_DECREF(ensure_future);
+
+        if (!task) {
+            PyErr_Print();
+            Py_DECREF(loop);
+            Py_DECREF(callback);
+            PyMem_Free(name_copy);
+            PyMem_Free(def);
+            Py_DECREF(asyncio);
+            return v8::Null(node->isolate);
+        }
+
+        PyObject* result = PyObject_CallMethod(task, "add_done_callback", "O", callback);
+        if (!result) {
+            PyErr_Print();
+        }
+        Py_XDECREF(result);
+
+        Py_DECREF(task);
+        Py_DECREF(loop);
+        Py_DECREF(callback);
+        Py_DECREF(asyncio);
 
         return promise;
     } else {
