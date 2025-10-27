@@ -20,8 +20,8 @@ fallback_version = "0.0.1"
 build = "cp39-* cp310-* cp311-* cp312-*"
 skip = "*-musllinux_*"
 
-test-command = "python -c \"import pythonodejs; print(pythonodejs)\""
-test-requires = []
+test-requires = ["pytest"]
+test-command = "pytest -v {project}/tests"
 
 [tool.cibuildwheel.linux]
 manylinux-x86_64-image = "manylinux_2_28"
