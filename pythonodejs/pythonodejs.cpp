@@ -704,7 +704,15 @@ PyObject* NodeJS_eval(NodeJSObject* self, PyObject* code)
         Local<Context> context = self->node->isolate->GetCurrentContext();
         Local<Function> eval = self->node->runInThisContext.Get(self->node->isolate);
         vector<Local<Value>> argv = { String::NewFromUtf8(self->node->isolate, source).ToLocalChecked() };
-        return JSToPy(self->node, eval->CallAsFunction(context, context->Global(), 1, argv.data()).ToLocalChecked());
+        v8::TryCatch try_catch(self->node->isolate);
+
+        Local<Value> res;
+        if (!eval->CallAsFunction(context, context->Global(), 1, argv.data()).ToLocal(&res)) {
+            v8::String::Utf8Value error(self->node->isolate, try_catch.Exception());
+            PyErr_SetString(PyExc_RuntimeError, *error);
+            return NULL;
+        }
+        return JSToPy(self->node, res);
     }
 }
 
@@ -722,7 +730,15 @@ PyObject* NodeJS_require(NodeJSObject* self, PyObject* arg)
         Local<Context> context = self->node->isolate->GetCurrentContext();
         Local<Function> require = self->node->require.Get(self->node->isolate);
         vector<Local<Value>> argv = { String::NewFromUtf8(self->node->isolate, url).ToLocalChecked() };
-        return JSToPy(self->node, require->CallAsFunction(context, context->Global(), 1, argv.data()).ToLocalChecked());
+        v8::TryCatch try_catch(self->node->isolate);
+
+        Local<Value> res;
+        if (!require->CallAsFunction(context, context->Global(), 1, argv.data()).ToLocal(&res)) {
+            v8::String::Utf8Value error(self->node->isolate, try_catch.Exception());
+            PyErr_SetString(PyExc_RuntimeError, *error);
+            return NULL;
+        }
+        return JSToPy(self->node, res);
     }
 }
 
@@ -740,7 +756,15 @@ PyObject* NodeJS_import(NodeJSObject* self, PyObject* arg)
         Local<Context> context = self->node->isolate->GetCurrentContext();
         Local<Function> import = self->node->import.Get(self->node->isolate);
         vector<Local<Value>> argv = { String::NewFromUtf8(self->node->isolate, url).ToLocalChecked() };
-        return JSToPy(self->node, import->CallAsFunction(context, context->Global(), 1, argv.data()).ToLocalChecked());
+        v8::TryCatch try_catch(self->node->isolate);
+
+        Local<Value> res;
+        if (!import->CallAsFunction(context, context->Global(), 1, argv.data()).ToLocal(&res)) {
+            v8::String::Utf8Value error(self->node->isolate, try_catch.Exception());
+            PyErr_SetString(PyExc_RuntimeError, *error);
+            return NULL;
+        }
+        return JSToPy(self->node, res);
     }
 }
 
