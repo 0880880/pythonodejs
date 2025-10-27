@@ -13,6 +13,7 @@
 #include "longobject.h"
 #include "node_realm.h"
 #include "object.h"
+#include "pyerrors.h"
 #include "unicodeobject.h"
 #include "v8-external.h"
 #include "v8-local-handle.h"
@@ -379,6 +380,33 @@ Local<Value> PyToJS(NodeEnv* node, PyObject* value)
             node->isolate, py_func_handler, External::New(node->isolate, new PyFunctionData { node, value }));
         Local<Function> fn = tpl->GetFunction(context).ToLocalChecked();
         return fn;
+    } else if (PyExceptionClass_Check(value)) { // Exception
+        PyObject* exc = PyObject_CallObject(value, NULL);
+        if (!exc) {
+            // handle error
+            using v8::Null;
+            return Null(node->isolate);
+        }
+
+        PyObject* args
+            = PyObject_GetAttrString(exc, "args");
+        if (args && PyTuple_Check(args)) {
+            Py_ssize_t n = PyTuple_Size(args);
+            if (n > 0) {
+                PyObject* first_arg = PyTuple_GetItem(args, 0); // borrowed reference
+                if (PyUnicode_Check(first_arg)) {
+                    const char* msg = PyUnicode_AsUTF8(first_arg);
+                    Local<String> message = String::NewFromUtf8(node->isolate, msg).ToLocalChecked();
+                    return v8::Exception::Error(message);
+                }
+            }
+        }
+        Py_XDECREF(args);
+        Py_XDECREF(exc);
+
+        using v8::Null;
+        return Null(node->isolate);
+
     } else if (PyList_Check(value)) // Array
     {
         int len = PyList_Size(value);
@@ -524,6 +552,17 @@ PyObject* JSToPy(NodeEnv* node, Local<Value> value)
         return PyUnicode_FromString(*utf8);
     } else if (value->IsPromise()) { // Promise
         Py_RETURN_NOTIMPLEMENTED;
+    } else if (value->IsNativeError()) { // Exception
+        Local<v8::Object> err = value.As<v8::Object>();
+        v8::Local<v8::String> msg_key = v8::String::NewFromUtf8(node->isolate, "message").ToLocalChecked();
+        v8::Local<v8::Value> message;
+        if (err->Get(context, msg_key).ToLocal(&message)) {
+            v8::String::Utf8Value msg_str(node->isolate, message);
+            PyErr_SetString(PyExc_RuntimeError, *msg_str);
+            return NULL;
+        }
+        PyErr_SetString(PyExc_RuntimeError, "JS Error");
+        return NULL;
     } else if (value->IsFunction()) {
         Local<Function> js_func = value.As<Function>();
 
