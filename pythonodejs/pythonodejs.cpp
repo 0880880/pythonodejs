@@ -326,6 +326,19 @@ void py_func_handler(const FunctionCallbackInfo<Value>& args)
     args.GetReturnValue().Set(PyToJS(func_data->node, res));
 }
 
+int is_coroutine_like(PyObject* obj)
+{
+    if (PyCoro_CheckExact(obj)) {
+        return 1;
+    }
+
+    if (PyObject_HasAttrString(obj, "__await__")) {
+        return 1;
+    }
+
+    return 0;
+}
+
 Local<Value> PyToJS(NodeEnv* node, PyObject* value)
 {
     Local<Context> context = node->isolate->GetCurrentContext();
@@ -437,7 +450,7 @@ Local<Value> PyToJS(NodeEnv* node, PyObject* value)
             values[i++] = PyToJS(node, py_val);
         }
         return Object::New(node->isolate, Null(node->isolate), keys.data(), values.data(), i);
-    } else if (PyCoro_CheckExact(value)) // Coroutine
+    } else if (is_coroutine_like(value)) // Coroutine
     {
         PyObject* asyncio = PyImport_ImportModule("asyncio");
         using v8::Null;
