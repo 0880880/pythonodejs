@@ -20,7 +20,7 @@ fallback_version = "0.0.1"
 build = "cp39-* cp310-* cp311-* cp312-*"
 skip = "*-musllinux_*"
 
-test-command = "python -c 'import pythonodejs; print(pythonodejs)'"
+test-command = "python -c \"import pythonodejs; print(pythonodejs)\""
 test-requires = []
 
 [tool.cibuildwheel.linux]
