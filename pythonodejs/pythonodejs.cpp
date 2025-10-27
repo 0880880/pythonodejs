@@ -544,7 +544,7 @@ Local<Value> PyToJS(NodeEnv* node, PyObject* value)
         return Object::New(node->isolate, Null(node->isolate), keys.data(), values.data(), i);
     }
 }
-static void cleanup_js_func(PyObject* capsule) {
+static void cleanup_js_func(PyObject* capsule)
     JSFunctionData* data = (JSFunctionData*)PyCapsule_GetPointer(capsule, "func_data");
     if (data) {
         data->js_func.Reset();
@@ -649,7 +649,7 @@ PyObject* JSToPy(NodeEnv* node, Local<Value> value)
         def->ml_flags = METH_VARARGS;
         def->ml_doc = doc_copy;
 
-        data->method_def = def; 
+        data->method_def = def;
 
         PyObject* capsule = PyCapsule_New(data, "func_data", cleanup_js_func);
         PyObject* func = PyCFunction_NewEx(def, capsule, NULL);
@@ -725,16 +725,16 @@ void NodeEnvFree(NodeEnv* node)
     }
     {
         V8Scope scope(node);
-        
+
         node::SpinEventLoop(node->env);
         node::Stop(node->env);
     }
-    
+
     {
         v8::Locker locker(node->isolate);
         v8::Isolate::Scope isolate_scope(node->isolate);
         v8::HandleScope handle_scope(node->isolate);
-        
+
         node->import.Reset();
         node->require.Reset();
         node->runInThisContext.Reset();
