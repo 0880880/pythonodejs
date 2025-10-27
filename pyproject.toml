@@ -11,6 +11,11 @@ requires-python = ">=3.9"
 license = { text = "MIT" }
 authors = [{ name = "0880" }]
 
+[tool.setuptools_scm]
+version_scheme = "guess-next-dev"
+local_scheme = "no-local-version"
+fallback_version = "0.0.1"
+
 [tool.cibuildwheel]
 build = "cp39-* cp310-* cp311-* cp312-*"
 skip = "*-musllinux_*"
