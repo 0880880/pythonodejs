@@ -1025,7 +1025,7 @@ static struct PyModuleDef node_mod = {
 };
 
 // Module initialization function
-PyMODINIT_FUNC PyInit_pythonodejs(void)
+PyMODINIT_FUNC PyInit__pythonodejs(void)
 {
     PyObject* m;
 
