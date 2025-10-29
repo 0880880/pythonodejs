@@ -843,6 +843,7 @@ typedef struct {
     NodeEnv* node;
 } NodeJSObject;
 
+static bool node_initialized = false;
 static int node_instances = 0;
 
 // 2. __init__ method
@@ -856,12 +857,13 @@ int NodeJS_init(NodeJSObject* self, PyObject* args, PyObject* kwds)
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "s|i", const_cast<char**>(kwlist), &path, &thread_pool_size))
         return -1;
 
-    if (node_instances == 0) {
+    if (!node_initialized) {
         NodeInit(thread_pool_size);
     }
     NodeEnv* node = NodeEnvCreate(path);
     self->node = node;
     node_instances++;
+    node_initialized = true;
     return 0;
 }
 
@@ -877,6 +879,7 @@ static void NodeJS_dealloc(NodeJSObject* self)
     NodeEnvFree(self->node);
     delete self->node;
     if (node_instances == 0) {
+        node_initialized = false;
         NodeFree();
     }
     Py_TYPE(self)->tp_free((PyObject*)self);
