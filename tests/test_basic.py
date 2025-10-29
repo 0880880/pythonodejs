@@ -23,7 +23,7 @@ def test_api_availability():
 
 @pytest.fixture(scope="function")
 def node(tmp_path):
-    temp_dir = str(tmp_path)
+    temp_dir = str(tmp_path / "tmp.js")
     node_instance = NodeJS(temp_dir)
     yield node_instance
     # Implicit dealloc on fixture teardown
@@ -38,16 +38,20 @@ def test_repr(node):
     assert isinstance(node, NodeJS)
 
 
-def test_multiple_instances():
-    instance1 = NodeJS(".")
-    instance2 = NodeJS(".")
+def test_multiple_instances(request):
+    project_root = request.config.rootpath
+    tmp = str(project_root / "tmp.js")
+    instance1 = NodeJS(tmp)
+    instance2 = NodeJS(tmp)
     assert instance1 != instance2
     del instance1  # Trigger partial free
     del instance2  # Trigger full free
 
 
 def test_init_with_thread_pool():
-    node = NodeJS(".", thread_pool_size=2)
+    project_root = request.config.rootpath
+    tmp = str(project_root / "tmp.js")
+    node = NodeJS(tmp, thread_pool_size=2)
     assert node is not None
     # Run a simple eval
     node.eval_cjs("1 + 1")
@@ -55,10 +59,12 @@ def test_init_with_thread_pool():
 
 
 def test_init_invalid_args():
+    project_root = request.config.rootpath
+    tmp = str(project_root / "tmp.js")
     with pytest.raises(TypeError):
         NodeJS(123)  # Invalid path type
     with pytest.raises(TypeError):
-        NodeJS(".", thread_pool_size="invalid")
+        NodeJS(tmp, thread_pool_size="invalid")
     # Additional invalid kwarg
     with pytest.raises(TypeError):
-        NodeJS(path=".", invalid=1)
+        NodeJS(path=tmp, invalid=1)

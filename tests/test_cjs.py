@@ -6,7 +6,7 @@ import os
 
 @pytest.fixture
 def node(request) -> NodeJS:
-    project_root = Path(request.config.rootpath)
+    project_root = request.config.rootpath / "test.js"
     return NodeJS(str(project_root))
 
 

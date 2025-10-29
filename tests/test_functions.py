@@ -3,8 +3,9 @@ import pytest
 
 
 @pytest.fixture
-def node() -> NodeJS:
-    return NodeJS(".")
+def node(request) -> NodeJS:
+    project_root = request.config.rootpath / "test.js"
+    return NodeJS(str(project_root))
 
 
 def test_js_func_to_py(node):

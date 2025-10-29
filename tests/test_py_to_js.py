@@ -4,8 +4,9 @@ import asyncio
 
 
 @pytest.fixture
-def node() -> NodeJS:
-    return NodeJS(".")
+def node(request) -> NodeJS:
+    project_root = request.config.rootpath / "test.js"
+    return NodeJS(str(project_root))
 
 
 def test_types_py_to_js(node):
