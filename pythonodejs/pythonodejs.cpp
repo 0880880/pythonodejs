@@ -849,6 +849,11 @@ static int node_instances = 0;
 // 2. __init__ method
 int NodeJS_init(NodeJSObject* self, PyObject* args, PyObject* kwds)
 {
+    if (self->node) {
+        node_instances--;
+        NodeEnvFree(self->node);
+        delete self->node;
+    }
     const char* path = nullptr;
     int thread_pool_size = 4;
 
