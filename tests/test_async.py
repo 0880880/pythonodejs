@@ -5,7 +5,8 @@ import pytest
 
 @pytest.fixture
 def node() -> NodeJS:
-    return NodeJS(".")
+    project_root = request.config.rootpath / "test.js"
+    return NodeJS(str(project_root))
 
 
 async def async_add(a, b):
