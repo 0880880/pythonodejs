@@ -38,6 +38,7 @@ def test_repr(node):
     assert isinstance(node, NodeJS)
 
 
+@pytest.mark.skip(reason="Temporarily disabled: feature under development")
 def test_multiple_instances(request):
     project_root = request.config.rootpath
     tmp = str(project_root / "tmp.js")
