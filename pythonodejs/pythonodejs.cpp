@@ -844,13 +844,11 @@ typedef struct {
 } NodeJSObject;
 
 static bool node_initialized = false;
-static int node_instances = 0;
 
 // 2. __init__ method
 int NodeJS_init(NodeJSObject* self, PyObject* args, PyObject* kwds)
 {
     if (self->node) {
-        node_instances--;
         NodeEnvFree(self->node);
         delete self->node;
     }
@@ -867,7 +865,6 @@ int NodeJS_init(NodeJSObject* self, PyObject* args, PyObject* kwds)
     }
     NodeEnv* node = NodeEnvCreate(path);
     self->node = node;
-    node_instances++;
     node_initialized = true;
     return 0;
 }
@@ -880,13 +877,8 @@ PyObject* NodeJS_repr(NodeJSObject* self)
 
 static void NodeJS_dealloc(NodeJSObject* self)
 {
-    node_instances--;
     NodeEnvFree(self->node);
     delete self->node;
-    if (node_instances == 0) {
-        node_initialized = false;
-        NodeFree();
-    }
     Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
@@ -1023,13 +1015,23 @@ static PyMethodDef LibMethods[] = {
     { NULL, NULL, 0, NULL } // Sentiel
 };
 
+static void pythonodejs_free(void* m)
+{
+    if (node_initialized)
+        NodeFree();
+}
+
 // Module definition
 static struct PyModuleDef node_mod = {
     PyModuleDef_HEAD_INIT,
     "pythonodejs", // Module name
     "Pythonodejs NodeJS Interop", // Module doc
     -1,
-    LibMethods
+    LibMethods, // module methods
+    NULL, // m_slots
+    NULL, // m_traverse
+    NULL, // m_clear
+    pythonodejs_free // m_free
 };
 
 // Module initialization function
