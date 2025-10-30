@@ -386,7 +386,7 @@ Local<Value> PyToJS(NodeEnv* node, PyObject* value)
             int sign = _PyLong_Sign(value) == -1 ? 1 : 0;
             using v8::BigInt;
             return BigInt::NewFromWords(context, sign, nwords, words).ToLocalChecked();
-        } else if (num < -2147483648LL && num > 2147483647LL) {
+        } else if (num < -2147483648LL || num > 2147483647LL) {
             using v8::BigInt;
             return BigInt::New(node->isolate, num);
         }
