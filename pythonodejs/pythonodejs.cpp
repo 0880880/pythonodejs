@@ -548,8 +548,6 @@ Local<Value> PyToJS(NodeEnv* node, PyObject* value)
 
         PyObject* callback = PyCFunction_NewEx(def, capsule, NULL);
 
-        PyMem_Free(capsule);
-
         if (!callback) {
             PyMem_Free(name_copy);
             PyMem_Free(def);
