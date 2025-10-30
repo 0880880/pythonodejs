@@ -289,6 +289,13 @@ static PyObject* js_promise_handler(PyObject* self, PyObject* future)
 
     {
         NodeEnv* node = data->node;
+
+        if (!node || !node->isolate) {
+            Py_DECREF(result);
+            PyErr_SetString(PyExc_RuntimeError, "Node environment no longer valid");
+            return NULL;
+        }
+
         V8Scope scope(node);
         Local<Promise::Resolver> resolver = data->js_resolver.Get(node->isolate);
         Local<Value> js_value = PyToJS(node, result);
