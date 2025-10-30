@@ -212,7 +212,8 @@ void NodeFree()
 NodeEnv* NodeEnvCreate(const char* absolute_path)
 {
     vector<string> errors;
-    auto setup = CommonEnvironmentSetup::Create(platform.get(), &errors, args, exec_args);
+    auto setup = CommonEnvironmentSetup::Create(platform.get(), &errors, args, exec_args,
+        static_cast<node::EnvironmentFlags::Flags>(node::EnvironmentFlags::kNoCreateInspector));
     NodeEnv* node = new NodeEnv();
     node->setup = std::move(setup);
     Isolate* isolate = node->setup->isolate();
