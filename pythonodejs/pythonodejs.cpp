@@ -16,6 +16,7 @@
 #include "node_realm.h"
 #include "object.h"
 #include "pyerrors.h"
+#include "pystate.h"
 #include "unicodeobject.h"
 #include "v8-external.h"
 #include "v8-local-handle.h"
@@ -325,9 +326,12 @@ void py_func_handler(const FunctionCallbackInfo<Value>& args)
 
     PyObject* func = func_data->py_func;
 
+    PyGILState_STATE gstate = PyGILState_Ensure();
+
     int nargs = args.Length();
     PyObject* py_args = PyTuple_New(nargs);
     if (!py_args) {
+        PyGILState_Release(gstate);
         isolate->ThrowException(
             v8::Exception::Error(
                 String::NewFromUtf8(isolate, "Failed to create Python tuple").ToLocalChecked()));
@@ -337,6 +341,7 @@ void py_func_handler(const FunctionCallbackInfo<Value>& args)
     for (int i = 0; i < nargs; i++) {
         PyObject* py_arg = JSToPy(func_data->node, args[i]);
         if (!py_arg) {
+            PyGILState_Release(gstate);
             Py_DECREF(py_args);
             isolate->ThrowException(
                 v8::Exception::Error(
@@ -351,6 +356,7 @@ void py_func_handler(const FunctionCallbackInfo<Value>& args)
 
     if (!res) {
         PyErr_Print();
+        PyGILState_Release(gstate);
         isolate->ThrowException(
             v8::Exception::Error(
                 String::NewFromUtf8(isolate, "Python function raised an exception").ToLocalChecked()));
@@ -359,6 +365,8 @@ void py_func_handler(const FunctionCallbackInfo<Value>& args)
 
     Local<Value> js_result = PyToJS(func_data->node, res);
     Py_DECREF(res);
+
+    PyGILState_Release(gstate);
 
     args.GetReturnValue().Set(js_result);
 }
