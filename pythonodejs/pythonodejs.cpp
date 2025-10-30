@@ -291,7 +291,17 @@ static PyObject* js_promise_handler(PyObject* self, PyObject* future)
         NodeEnv* node = data->node;
         V8Scope scope(node);
         Local<Promise::Resolver> resolver = data->js_resolver.Get(node->isolate);
-        resolver->Resolve(node->isolate->GetCurrentContext(), PyToJS(data->node, result)).Check();
+        Local<Value> js_value = PyToJS(node, result);
+
+        v8::TryCatch try_catch(node->isolate);
+        v8::Maybe<bool> maybe_result = resolver->Resolve(node->isolate->GetCurrentContext(), js_value);
+
+        if (maybe_result.IsNothing()) {
+            if (try_catch.HasCaught()) {
+                v8::String::Utf8Value error(node->isolate, try_catch.Exception());
+                fprintf(stderr, "Failed to resolve promise: %s\n", *error);
+            }
+        }
     }
     Py_DECREF(result);
     Py_RETURN_NONE;
