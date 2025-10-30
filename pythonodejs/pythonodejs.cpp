@@ -325,10 +325,42 @@ void py_func_handler(const FunctionCallbackInfo<Value>& args)
 
     PyObject* func = func_data->py_func;
 
-    vector<PyObject> argv = {};
+    int nargs = args.Length();
+    PyObject* py_args = PyTuple_New(nargs);
+    if (!py_args) {
+        isolate->ThrowException(
+            v8::Exception::Error(
+                String::NewFromUtf8(isolate, "Failed to create Python tuple").ToLocalChecked()));
+        return;
+    }
 
-    PyObject* res = PyObject_CallObject(func, argv.data());
-    args.GetReturnValue().Set(PyToJS(func_data->node, res));
+    for (int i = 0; i < nargs; i++) {
+        PyObject* py_arg = JSToPy(func_data->node, args[i]);
+        if (!py_arg) {
+            Py_DECREF(py_args);
+            isolate->ThrowException(
+                v8::Exception::Error(
+                    String::NewFromUtf8(isolate, "Failed to convert JS argument to Python").ToLocalChecked()));
+            return;
+        }
+        PyTuple_SET_ITEM(py_args, i, py_arg); // Steals reference
+    }
+
+    PyObject* res = PyObject_CallObject(func, py_args);
+    Py_DECREF(py_args);
+
+    if (!res) {
+        PyErr_Print();
+        isolate->ThrowException(
+            v8::Exception::Error(
+                String::NewFromUtf8(isolate, "Python function raised an exception").ToLocalChecked()));
+        return;
+    }
+
+    Local<Value> js_result = PyToJS(func_data->node, res);
+    Py_DECREF(res);
+
+    args.GetReturnValue().Set(js_result);
 }
 
 static void cleanup_py_promise(PyObject* capsule)
