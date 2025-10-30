@@ -321,17 +321,49 @@ static PyObject* js_func_handler(PyObject* self, PyObject* args)
         return NULL;
 
     long nargs = PyTuple_Size(args);
+    PyObject* result = NULL;
     {
         NodeEnv* node = data->node;
+
+        vector<Local<Value>> argv = {};
+        argv.reserve(nargs);
+
+        Local<Function> func;
+
+        Py_BEGIN_ALLOW_THREADS;
+
         V8Scope scope(node);
         Local<Function> func = data->js_func.Get(node->isolate);
-        vector<Local<Value>> argv = {};
+
+        Py_END_ALLOW_THREADS;
+
         for (int i = 0; i < nargs; i++) {
             argv.push_back(PyToJS(node, PyTuple_GetItem(args, i)));
         }
+
+        Py_BEGIN_ALLOW_THREADS;
+
         Local<Value> recv = node->isolate->GetCurrentContext()->Global(); // TODO Fix recv for objects
-        return JSToPy(node, func->Call(node->isolate->GetCurrentContext(), recv, nargs, argv.data()).ToLocalChecked()); // TODO catch errors
+        v8::TryCatch try_catch(node->isolate);
+        MaybeLocal<Value> maybe_result = func->Call(node->isolate->GetCurrentContext(), recv, nargs, argv.data());
+
+        if (maybe_result.IsEmpty()) {
+            PyEval_RestoreThread(_save);
+            if (try_catch.HasCaught()) {
+                v8::String::Utf8Value error(node->isolate, try_catch.Exception());
+                PyErr_SetString(PyExc_RuntimeError, *error);
+            } else {
+                PyErr_SetString(PyExc_RuntimeError, "JS function call failed");
+            }
+            return NULL;
+        }
+
+        result = JSToPy(node, maybe_result.ToLocalChecked());
+
+        Py_END_ALLOW_THREADS;
     }
+
+    return result;
 }
 
 void py_func_handler(const FunctionCallbackInfo<Value>& args)
