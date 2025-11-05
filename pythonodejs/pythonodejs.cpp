@@ -333,7 +333,7 @@ static PyObject* js_func_handler(PyObject* self, PyObject* args)
         Py_BEGIN_ALLOW_THREADS;
 
         V8Scope scope(node);
-        Local<Function> func = data->js_func.Get(node->isolate);
+        func = data->js_func.Get(node->isolate);
 
         Py_END_ALLOW_THREADS;
 
