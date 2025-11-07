@@ -1112,7 +1112,7 @@ static void pythonodejs_free(void* m)
 // Module definition
 static struct PyModuleDef node_mod = {
     PyModuleDef_HEAD_INIT,
-    "pythonodejs", // Module name
+    "_pythonodejs", // Module name
     "Pythonodejs NodeJS Interop", // Module doc
     -1,
     LibMethods, // module methods
