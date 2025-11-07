@@ -313,6 +313,7 @@ static PyObject* js_func_handler(PyObject* self, PyObject* args)
     PyObject* result = NULL;
     {
         NodeEnv* node = data->node;
+        V8_SCOPE(node);
 
         vector<Local<Value>> argv = {};
         argv.reserve(nargs);
@@ -321,7 +322,6 @@ static PyObject* js_func_handler(PyObject* self, PyObject* args)
 
         Py_BEGIN_ALLOW_THREADS;
 
-        V8_SCOPE(node);
         func = data->js_func.Get(node->isolate);
 
         Py_END_ALLOW_THREADS;
