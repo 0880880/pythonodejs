@@ -58,7 +58,7 @@ elif system == "Windows":
 
 pythonodejs_extension = Extension(
     "pythonodejs._pythonodejs",
-    sources=["pythonodejs/pythonodejs.cpp"],
+    sources=["src/pythonodejs/pythonodejs.cpp"],
     include_dirs=include_dirs,
     library_dirs=library_dirs,
     libraries=libraries,
@@ -70,6 +70,7 @@ pythonodejs_extension = Extension(
 setup(
     ext_modules=[pythonodejs_extension],
     packages=["pythonodejs"],
+    package_dir={"": "src"},
     package_data={
         "pythonodejs": ["*.pyi"],
     },

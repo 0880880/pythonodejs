@@ -15,6 +15,7 @@ authors = [{ name = "0880" }]
 version_scheme = "guess-next-dev"
 local_scheme = "no-local-version"
 fallback_version = "0.0.1"
+version_file = "src/pythonodejs/_version.py"
 
 [tool.cibuildwheel]
 build = "cp39-* cp310-* cp311-* cp312-*"
