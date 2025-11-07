@@ -269,9 +269,46 @@ static PyObject* js_promise_handler(PyObject* self, PyObject* future)
     if (!data)
         return NULL;
 
+    PyObject* exception = PyObject_CallMethod(future, "exception", NULL);
+    if (exception && exception != Py_None) {
+        NodeEnv* node = data->node;
+
+        if (!node || !node->isolate) {
+            Py_DECREF(exception);
+            PyErr_SetString(PyExc_RuntimeError, "Node environment no longer valid");
+            return NULL;
+        }
+
+        V8_SCOPE(node);
+        Local<Promise::Resolver> resolver = data->js_resolver.Get(node->isolate);
+
+        PyObject* exc_str = PyObject_Str(exception);
+        const char* error_msg = exc_str ? PyUnicode_AsUTF8(exc_str) : "Unknown Python error";
+
+        Local<String> js_error_msg = String::NewFromUtf8(node->isolate, error_msg).ToLocalChecked();
+        Local<Value> js_error = v8::Exception::Error(js_error_msg);
+
+        Py_XDECREF(exc_str);
+        Py_DECREF(exception);
+
+        v8::TryCatch try_catch(node->isolate);
+        v8::Maybe<bool> maybe_result = resolver->Reject(node->setup->context(), js_error);
+
+        if (maybe_result.IsNothing()) {
+            if (try_catch.HasCaught()) {
+                v8::String::Utf8Value error(node->isolate, try_catch.Exception());
+                fprintf(stderr, "Failed to reject promise: %s\n", *error);
+            }
+        }
+
+        Py_RETURN_NONE;
+    }
+
+    Py_XDECREF(exception);
+
     PyObject* result = PyObject_CallMethod(future, "result", NULL);
     if (!result) {
-        // if coroutine raised, .result() re-raises, so handle exception
+        // This shouldn't happend
         PyErr_Print();
         Py_RETURN_NONE;
     }
