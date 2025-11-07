@@ -299,6 +299,15 @@ static PyObject* js_promise_handler(PyObject* self, PyObject* future)
                 v8::String::Utf8Value error(node->isolate, try_catch.Exception());
                 fprintf(stderr, "Failed to reject promise: %s\n", *error);
             }
+        } else {
+            Local<Promise> promise = resolver->GetPromise();
+            Local<Function> catch_handler = Function::New(
+                node->setup->context(),
+                [](const FunctionCallbackInfo<Value>& args) {
+                },
+                Local<Value>())
+                                                .ToLocalChecked();
+            (void)promise->Catch(node->setup->context(), catch_handler);
         }
 
         Py_RETURN_NONE;
