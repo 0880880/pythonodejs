@@ -301,7 +301,7 @@ static PyObject* js_promise_handler(PyObject* self, PyObject* future)
         Local<Value> js_value = PyToJS(node, result);
 
         v8::TryCatch try_catch(node->isolate);
-        v8::Maybe<bool> maybe_result = resolver->Resolve(node->isolate->GetCurrentContext(), js_value);
+        v8::Maybe<bool> maybe_result = resolver->Resolve(node->setup->context(), js_value);
 
         if (maybe_result.IsNothing()) {
             if (try_catch.HasCaught()) {
@@ -343,9 +343,9 @@ static PyObject* js_func_handler(PyObject* self, PyObject* args)
 
         Py_BEGIN_ALLOW_THREADS;
 
-        Local<Value> recv = node->isolate->GetCurrentContext()->Global(); // TODO Fix recv for objects
+        Local<Value> recv = node->setup->context()->Global(); // TODO Fix recv for objects
         v8::TryCatch try_catch(node->isolate);
-        MaybeLocal<Value> maybe_result = func->Call(node->isolate->GetCurrentContext(), recv, nargs, argv.data());
+        MaybeLocal<Value> maybe_result = func->Call(node->setup->context(), recv, nargs, argv.data());
 
         if (maybe_result.IsEmpty()) {
             PyEval_RestoreThread(_save);
@@ -448,7 +448,7 @@ int is_coroutine_like(PyObject* obj)
 
 Local<Value> PyToJS(NodeEnv* node, PyObject* value)
 {
-    Local<Context> context = node->isolate->GetCurrentContext();
+    Local<Context> context = node->setup->context();
     if (value == Py_None) // None
     {
         using v8::Null;
@@ -586,7 +586,7 @@ Local<Value> PyToJS(NodeEnv* node, PyObject* value)
         if (!asyncio)
             return Null(node->isolate);
 
-        v8::Local<v8::Context> context = node->isolate->GetCurrentContext();
+        v8::Local<v8::Context> context = node->setup->context();
         v8::MaybeLocal<v8::Promise::Resolver> maybe_resolver = v8::Promise::Resolver::New(context);
         if (maybe_resolver.IsEmpty()) {
             Py_DECREF(asyncio);
@@ -743,7 +743,7 @@ static void cleanup_js_func(PyObject* capsule)
 
 PyObject* JSToPy(NodeEnv* node, Local<Value> value)
 {
-    Local<Context> context = node->isolate->GetCurrentContext();
+    Local<Context> context = node->setup->context();
     if (value.IsEmpty() || value->IsNullOrUndefined()) { // None
         Py_RETURN_NONE;
     } else if (value->IsBoolean()) { // Boolean
@@ -859,11 +859,11 @@ PyObject* JSToPy(NodeEnv* node, Local<Value> value)
 
         PyObject* dict = _PyDict_NewPresized(length);
         for (int i = 0; i < length; i++) {
-            Local<Value> key = keys->Get(node->isolate->GetCurrentContext(), i).ToLocalChecked();
+            Local<Value> key = keys->Get(node->setup->context(), i).ToLocalChecked();
             Local<String> str = key->ToString(context).ToLocalChecked();
             String::Utf8Value utf8(node->isolate, str);
 
-            Local<Value> val = obj->Get(node->isolate->GetCurrentContext(), key).ToLocalChecked();
+            Local<Value> val = obj->Get(node->setup->context(), key).ToLocalChecked();
 
             PyDict_SetItemString(dict, *utf8, JSToPy(node, val));
         }
@@ -981,7 +981,7 @@ PyObject* NodeJS_eval(NodeJSObject* self, PyObject* code)
     const char* source = PyUnicode_AsUTF8(code);
     {
         V8Scope scope(self->node);
-        Local<Context> context = self->node->isolate->GetCurrentContext();
+        Local<Context> context = self->node->setup->context();
         Local<Function> eval = self->node->runInThisContext.Get(self->node->isolate);
         vector<Local<Value>> argv = { String::NewFromUtf8(self->node->isolate, source).ToLocalChecked() };
         v8::TryCatch try_catch(self->node->isolate);
@@ -1007,7 +1007,7 @@ PyObject* NodeJS_require(NodeJSObject* self, PyObject* arg)
     const char* url = PyUnicode_AsUTF8(arg);
     {
         V8Scope scope(self->node);
-        Local<Context> context = self->node->isolate->GetCurrentContext();
+        Local<Context> context = self->node->setup->context();
         Local<Function> require = self->node->require.Get(self->node->isolate);
         vector<Local<Value>> argv = { String::NewFromUtf8(self->node->isolate, url).ToLocalChecked() };
         v8::TryCatch try_catch(self->node->isolate);
@@ -1033,7 +1033,7 @@ PyObject* NodeJS_import(NodeJSObject* self, PyObject* arg)
     const char* url = PyUnicode_AsUTF8(arg);
     {
         V8Scope scope(self->node);
-        Local<Context> context = self->node->isolate->GetCurrentContext();
+        Local<Context> context = self->node->setup->context();
         Local<Function> import = self->node->import.Get(self->node->isolate);
         vector<Local<Value>> argv = { String::NewFromUtf8(self->node->isolate, url).ToLocalChecked() };
         v8::TryCatch try_catch(self->node->isolate);
