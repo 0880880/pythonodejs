@@ -132,22 +132,11 @@ void SpinEventLoopSync(Environment* env, bool until_idle)
     }
 }
 
-class V8Scope {
-public:
-    V8Scope(NodeEnv* node)
-        : locker_(node->isolate)
-        , isolate_scope_(node->isolate)
-        , handle_scope_(node->isolate)
-        , context_scope_(node->setup->context())
-    {
-    }
-
-private:
-    v8::Locker locker_;
-    v8::Isolate::Scope isolate_scope_;
-    v8::HandleScope handle_scope_;
-    v8::Context::Scope context_scope_;
-};
+#define V8_SCOPE(node)                                          \
+    v8::Locker locker_##__LINE__(node->isolate);                \
+    v8::Isolate::Scope isolate_scope_##__LINE__(node->isolate); \
+    v8::HandleScope handle_scope_##__LINE__(node->isolate);     \
+    v8::Context::Scope context_scope_##__LINE__(node->setup->context());
 
 Local<Value> GetValueByKey(Local<Context> context, Isolate* isolate,
     Local<Object> obj,
@@ -296,7 +285,7 @@ static PyObject* js_promise_handler(PyObject* self, PyObject* future)
             return NULL;
         }
 
-        V8Scope scope(node);
+        V8_SCOPE(node);
         Local<Promise::Resolver> resolver = data->js_resolver.Get(node->isolate);
         Local<Value> js_value = PyToJS(node, result);
 
@@ -332,7 +321,7 @@ static PyObject* js_func_handler(PyObject* self, PyObject* args)
 
         Py_BEGIN_ALLOW_THREADS;
 
-        V8Scope scope(node);
+        V8_SCOPE(node);
         func = data->js_func.Get(node->isolate);
 
         Py_END_ALLOW_THREADS;
@@ -874,7 +863,7 @@ PyObject* JSToPy(NodeEnv* node, Local<Value> value)
 void PollSync(NodeEnv* node, bool blocking)
 {
     {
-        V8Scope scope(node);
+        V8_SCOPE(node);
         SpinEventLoopSync(node->env, blocking);
         for (auto it = node->promises.begin(); it != node->promises.end();) {
             Local<Promise> promise = it->second.Get(node->isolate);
@@ -908,7 +897,7 @@ void NodeEnvFree(NodeEnv* node)
         return;
     }
     {
-        V8Scope scope(node);
+        V8_SCOPE(node);
 
         node::SpinEventLoop(node->env);
         node::Stop(node->env);
@@ -980,7 +969,7 @@ PyObject* NodeJS_eval(NodeJSObject* self, PyObject* code)
 
     const char* source = PyUnicode_AsUTF8(code);
     {
-        V8Scope scope(self->node);
+        V8_SCOPE(self->node);
         Local<Context> context = self->node->setup->context();
         Local<Function> eval = self->node->runInThisContext.Get(self->node->isolate);
         vector<Local<Value>> argv = { String::NewFromUtf8(self->node->isolate, source).ToLocalChecked() };
@@ -1006,7 +995,7 @@ PyObject* NodeJS_require(NodeJSObject* self, PyObject* arg)
 
     const char* url = PyUnicode_AsUTF8(arg);
     {
-        V8Scope scope(self->node);
+        V8_SCOPE(self->node);
         Local<Context> context = self->node->setup->context();
         Local<Function> require = self->node->require.Get(self->node->isolate);
         vector<Local<Value>> argv = { String::NewFromUtf8(self->node->isolate, url).ToLocalChecked() };
@@ -1032,7 +1021,7 @@ PyObject* NodeJS_import(NodeJSObject* self, PyObject* arg)
 
     const char* url = PyUnicode_AsUTF8(arg);
     {
-        V8Scope scope(self->node);
+        V8_SCOPE(self->node);
         Local<Context> context = self->node->setup->context();
         Local<Function> import = self->node->import.Get(self->node->isolate);
         vector<Local<Value>> argv = { String::NewFromUtf8(self->node->isolate, url).ToLocalChecked() };
