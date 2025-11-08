@@ -631,6 +631,17 @@ Local<Value> PyToJS(NodeEnv* node, PyObject* value)
         v8::Local<v8::Promise::Resolver> resolver = maybe_resolver.ToLocalChecked();
         v8::Local<v8::Promise> promise = resolver->GetPromise();
 
+        Local<Function> catch_handler = Function::New(
+            context,
+            [](const FunctionCallbackInfo<Value>& args) {
+                // This catch handler prevents unhandled rejection warnings
+                // The actual error is still available through the promise chain
+            },
+            Local<Value>())
+                                            .ToLocalChecked();
+
+        (void)promise->Catch(context, catch_handler);
+
         JSPromiseData* data = (JSPromiseData*)PyMem_Malloc(sizeof(JSPromiseData));
         if (!data)
             return Null(node->isolate);
