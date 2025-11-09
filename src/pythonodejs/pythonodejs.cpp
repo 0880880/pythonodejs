@@ -818,6 +818,16 @@ PyObject* JSToPy(NodeEnv* node, Local<Value> value)
         String::Utf8Value utf8(node->isolate, obj->ValueOf());
         return PyUnicode_FromString(*utf8);
     } else if (value->IsPromise()) { // Promise
+        // Add a catch handler to prevent unhandled rejection warnings
+        Local<Promise> promise = value.As<Promise>();
+        Local<Function> catch_handler = Function::New(
+            context,
+            [](const FunctionCallbackInfo<Value>& args) {
+                // This catch handler prevents unhandled rejection warnings
+            },
+            Local<Value>())
+                                            .ToLocalChecked();
+        (void)promise->Catch(context, catch_handler);
         Py_RETURN_NOTIMPLEMENTED;
     } else if (value->IsNativeError()) { // Exception
         Local<v8::Object> err = value.As<v8::Object>();
@@ -1037,6 +1047,18 @@ PyObject* NodeJS_eval(NodeJSObject* self, PyObject* code)
             v8::String::Utf8Value error(self->node->isolate, try_catch.Exception());
             PyErr_SetString(PyExc_RuntimeError, *error);
             return NULL;
+        }
+        // If result is a promise, attach a catch handler to prevent unhandled rejection warnings
+        if (res->IsPromise()) {
+            Local<Promise> promise = res.As<Promise>();
+            Local<Function> catch_handler = Function::New(
+                context,
+                [](const FunctionCallbackInfo<Value>& args) {
+                    // Catch handler to prevent unhandled rejection warnings
+                },
+                Local<Value>())
+                                                .ToLocalChecked();
+            (void)promise->Catch(context, catch_handler);
         }
         return JSToPy(self->node, res);
     }
