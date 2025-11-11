@@ -1,5 +1,6 @@
 #pragma once
 
+#include "v8-container.h"
 #ifndef NODE_WANT_INTERNALS
 #define NODE_WANT_INTERNALS 1
 #endif
@@ -31,4 +32,5 @@ typedef struct NodeEnv {
     Global<Function> require;
     Global<Function> runInThisContext;
     map<int, Global<Promise>> promises;
+    Global<v8::Map> visited;
 } NodeEnv;
