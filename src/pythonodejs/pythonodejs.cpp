@@ -23,6 +23,7 @@
 #include "v8-object.h"
 #include "v8-persistent-handle.h"
 #include "v8-primitive.h"
+#include "v8-promise.h"
 #include <assert.h>
 
 using std::mt19937;
@@ -234,9 +235,11 @@ NodeEnv* NodeEnvCreate(const char* absolute_path)
         Local<Function> import_func = Local<Function>::Cast(GetValueByKey(context, isolate, dict, "import"));
         Local<Function> require_func = Local<Function>::Cast(GetValueByKey(context, isolate, dict, "require"));
         Local<Function> runInThisContext_func = Local<Function>::Cast(GetValueByKey(context, isolate, dict, "runInThisContext"));
+        Local<v8::Map> visited_map = v8::Map::New(isolate);
         node->import.Reset(isolate, import_func);
         node->require.Reset(isolate, require_func);
         node->runInThisContext.Reset(isolate, runInThisContext_func);
+        node->visited.Reset(isolate, visited_map);
     }
 
     return node;
@@ -790,6 +793,7 @@ static void cleanup_js_func(PyObject* capsule)
 PyObject* JSToPy(NodeEnv* node, Local<Value> value)
 {
     Local<Context> context = node->setup->context();
+    Local<v8::Map> visited = node->visited.Get(node->isolate);
     if (value.IsEmpty() || value->IsNullOrUndefined()) { // None
         Py_RETURN_NONE;
     } else if (value->IsBoolean()) { // Boolean
@@ -818,8 +822,9 @@ PyObject* JSToPy(NodeEnv* node, Local<Value> value)
         String::Utf8Value utf8(node->isolate, obj->ValueOf());
         return PyUnicode_FromString(*utf8);
     } else if (value->IsPromise()) { // Promise
+        v8::Local<v8::Promise> promise = value.As<v8::Promise>();
+        // TODO add to visited
         // Add a catch handler to prevent unhandled rejection warnings
-        Local<Promise> promise = value.As<Promise>();
         Local<Function> catch_handler = Function::New(
             context,
             [](const FunctionCallbackInfo<Value>& args) {
@@ -894,26 +899,32 @@ PyObject* JSToPy(NodeEnv* node, Local<Value> value)
         PyObject* capsule = PyCapsule_New(data, "func_data", cleanup_js_func);
         PyObject* func = PyCFunction_NewEx(def, capsule, NULL);
 
-        return func;
+        visited->Set(context, js_func, v8::External::New(node->isolate, func)).ToLocalChecked(); // TODO Catch errors
 
+        return func;
     } else if (value->IsArray() || value->IsSet()) { // Array
         Local<Array> arr;
         if (value->IsSet()) {
-            arr = value.As<Set>()->AsArray();
+            Local<v8::Set> set = value.As<Set>();
+            arr = set->AsArray();
         } else {
             arr = value.As<Array>();
         }
         PyObject* list = PyList_New(arr->Length());
+        visited->Set(context, arr, v8::External::New(node->isolate, list)).ToLocalChecked(); // TODO Catch errors
         for (int i = 0; i < arr->Length(); i++) {
-            PyList_SET_ITEM(list, i, JSToPy(node, arr->Get(context, i).ToLocalChecked()));
+            Local<Value> item = arr->Get(context, i).ToLocalChecked();
+            if (!visited->Has(context, item).ToChecked())
+                PyList_SET_ITEM(list, i, JSToPy(node, item));
         }
+        visited->Delete(context, arr).ToChecked(); // Catch errors
         return list;
     } else { // Any Object
         Local<Object> obj = value.As<Object>();
         Local<Array> keys = obj->GetOwnPropertyNames(context).ToLocalChecked();
         size_t length = keys->Length();
-
         PyObject* dict = _PyDict_NewPresized(length);
+        visited->Set(context, obj, v8::External::New(node->isolate, dict)).ToLocalChecked(); // TODO Catch errors
         for (int i = 0; i < length; i++) {
             Local<Value> key = keys->Get(node->setup->context(), i).ToLocalChecked();
             Local<String> str = key->ToString(context).ToLocalChecked();
@@ -921,8 +932,10 @@ PyObject* JSToPy(NodeEnv* node, Local<Value> value)
 
             Local<Value> val = obj->Get(node->setup->context(), key).ToLocalChecked();
 
-            PyDict_SetItemString(dict, *utf8, JSToPy(node, val));
+            if (!visited->Has(context, val).ToChecked())
+                PyDict_SetItemString(dict, *utf8, JSToPy(node, val));
         }
+        visited->Delete(context, obj).ToChecked(); // Catch errors
         return dict;
     }
 }
@@ -978,6 +991,7 @@ void NodeEnvFree(NodeEnv* node)
         node->import.Reset();
         node->require.Reset();
         node->runInThisContext.Reset();
+        node->visited.Reset();
         node->promises.clear();
     }
 }
