@@ -852,7 +852,13 @@ PyObject* JSToPy(NodeEnv* node, Local<Value> value)
         int microseconds = (int)(fmod(ms, 1000)) * 1000;
 
         struct tm timeinfo;
-        if (gmtime_r(&seconds, &timeinfo) == NULL) {
+        if (
+#ifdef _WIN32
+            gmtime_s(&timeinfo, &seconds) != 0
+#else
+            gmtime_r(&seconds, &timeinfo) == NULL
+#endif
+        ) {
             PyErr_SetString(PyExc_ValueError, "Invalid timestamp");
             return NULL;
         }
