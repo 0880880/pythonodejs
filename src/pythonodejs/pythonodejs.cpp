@@ -1,10 +1,12 @@
 #include "common.h"
 
 #include <Python.h>
+#include <chrono>
 #include <cmath>
 #include <datetime.h>
 #include <random>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include "cppgc/platform.h"
@@ -147,17 +149,37 @@ Local<Value> GetValueByKey(Local<Context> context, Isolate* isolate,
     return obj->Get(context, v8Key).ToLocalChecked();
 }
 
-string random_string(size_t length)
+string encode_base62(uint64_t value)
 {
-    static const char chars[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-    static thread_local mt19937 rng { random_device {}() };
-    static thread_local uniform_int_distribution<> dist(0, sizeof(chars) - 2);
+    static const char chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    string result;
+    do {
+        result = chars[value % 62] + result;
+        value /= 62;
+    } while (value > 0);
+    return result;
+}
 
-    string s;
-    s.reserve(length);
-    for (size_t i = 0; i < length; ++i)
-        s.push_back(chars[dist(rng)]);
-    return s;
+string random_string()
+{
+    static std::atomic<uint64_t> counter { 0 };
+
+    uint64_t timestamp = std::chrono::steady_clock::now().time_since_epoch().count();
+    uint64_t thread_id = std::hash<std::thread::id> {}(std::this_thread::get_id());
+    uint64_t c = counter.fetch_add(1, std::memory_order_relaxed);
+
+    std::string ts_str = encode_base62(timestamp);
+    std::string tid_str = encode_base62(thread_id);
+    std::string counter_str = encode_base62(c);
+
+    char first_char = 'A';
+    if (!isalpha(ts_str[0]) && ts_str[0] != '_') {
+        first_char = 'A';
+    } else {
+        first_char = ts_str[0];
+    }
+
+    return first_char + ts_str.substr(1) + "_" + tid_str + "_" + counter_str;
 }
 
 static unique_ptr<MultiIsolatePlatform> platform = nullptr;
