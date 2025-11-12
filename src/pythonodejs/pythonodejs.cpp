@@ -241,7 +241,7 @@ NodeEnv* NodeEnvCreate(const char* absolute_path)
         v8::HandleScope handle_scope(isolate);
         Local<v8::Context> context = node->setup->context();
         v8::Context::Scope context_scope(node->setup->context());
-        string import_name = "import_" + random_string(6);
+        string import_name = "import_" + random_string();
         MaybeLocal<Value> ret = _nodejs::LoadEnvironment(env,
             "function " + import_name + "(s) { return import(s); }"
                                         "const publicRequire = require('module').createRequire(\""
@@ -689,7 +689,7 @@ Local<Value> PyToJS(NodeEnv* node, PyObject* value)
             return v8::Null(node->isolate);
         }
 
-        std::string name_str = "callback_" + random_string(12);
+        std::string name_str = "callback_" + random_string();
         char* name_copy = (char*)PyMem_Malloc(name_str.length() + 1);
         if (!name_copy) {
             PyMem_Free(def);
