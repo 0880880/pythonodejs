@@ -401,14 +401,15 @@ static PyObject* js_func_handler(PyObject* self, PyObject* args)
             argv.push_back(PyToJS(node, PyTuple_GetItem(args, i)));
         }
 
-        Py_BEGIN_ALLOW_THREADS;
+        PyThreadState* _save = PyEval_SaveThread();
 
         Local<Value> recv = node->setup->context()->Global(); // TODO Fix recv for objects
         v8::TryCatch try_catch(node->isolate);
         MaybeLocal<Value> maybe_result = func->Call(node->setup->context(), recv, nargs, argv.data());
 
+        PyEval_RestoreThread(_save);
+
         if (maybe_result.IsEmpty()) {
-            PyEval_RestoreThread(_save);
             if (try_catch.HasCaught()) {
                 v8::String::Utf8Value error(node->isolate, try_catch.Exception());
                 PyErr_SetString(PyExc_RuntimeError, *error);
@@ -419,8 +420,6 @@ static PyObject* js_func_handler(PyObject* self, PyObject* args)
         }
 
         result = JSToPy(node, maybe_result.ToLocalChecked());
-
-        Py_END_ALLOW_THREADS;
     }
 
     return result;
