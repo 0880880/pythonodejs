@@ -77,9 +77,9 @@ jobs:
     strategy:
       matrix:
         include:
-          - arch: x86_64
-            os: macos-14-intel # Intel runner
-            configure_flags: --ninja --shared
+          #- arch: x86_64
+          #  os: macos-14-intel # Intel runner
+          #  configure_flags: --ninja --shared
           - arch: arm64
             os: macos-latest # Apple Silicon runner
             configure_flags: --ninja --shared
