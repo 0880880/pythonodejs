@@ -232,9 +232,9 @@ jobs:
     strategy:
       matrix:
         include:
-          - arch: x86_64
-            os: macos-15-latest
-            cibw_arch: x86_64
+          #- arch: x86_64
+          #  os: macos-15-latest
+          #  cibw_arch: x86_64
           - arch: arm64
             os: macos-latest
             cibw_arch: arm64
