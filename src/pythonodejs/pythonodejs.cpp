@@ -633,8 +633,9 @@ Local<Value> PyToJS(NodeEnv* node, PyObject* value)
             PyErr_Clear();
             return v8::Null(node->isolate);
         }
-        vector<Local<Name>> keys(len);
-        vector<Local<Value>> values(len);
+        size_t ulen = static_cast<size_t>(len);
+        vector<Local<Name>> keys(ulen);
+        vector<Local<Value>> values(ulen);
         Py_ssize_t pos;
         PyObject *py_key, *py_val;
         int i = 0;
