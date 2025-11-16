@@ -18,6 +18,7 @@
 #include "node_realm.h"
 #include "object.h"
 #include "pyerrors.h"
+#include "pyport.h"
 #include "pystate.h"
 #include "unicodeobject.h"
 #include "v8-external.h"
@@ -624,10 +625,14 @@ Local<Value> PyToJS(NodeEnv* node, PyObject* value)
             arr->Set(context, i, PyToJS(node, PyTuple_GetItem(value, i))).Check();
         }
         return arr;
-    } else if (PyDict_Check(value)) // Object
+    } else if (PyDict_Check(value)) // Object TODO use PyMapping
     {
         using v8::Name;
-        int len = PyDict_Size(value);
+        Py_ssize_t len = PyObject_Size(value);
+        if (len == -1) {
+            PyErr_Clear();
+            return v8::Null(node->isolate);
+        }
         vector<Local<Name>> keys(len);
         vector<Local<Value>> values(len);
         Py_ssize_t pos;
