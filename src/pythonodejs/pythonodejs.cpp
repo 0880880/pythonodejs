@@ -629,7 +629,7 @@ Local<Value> PyToJS(NodeEnv* node, PyObject* value)
     {
         using v8::Name;
         Py_ssize_t len = PyObject_Size(value);
-        if (len == -1) {
+        if (len < 0) {
             PyErr_Clear();
             return v8::Null(node->isolate);
         }
