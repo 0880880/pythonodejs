@@ -387,7 +387,7 @@ static PyObject* js_func_handler(PyObject* self, PyObject* args)
         V8_SCOPE(node);
 
         vector<Local<Value>> argv = {};
-        argv.reserve(nargs);
+        argv.resize(nargs);
 
         Local<Function> func;
 
@@ -398,7 +398,7 @@ static PyObject* js_func_handler(PyObject* self, PyObject* args)
         Py_END_ALLOW_THREADS;
 
         for (int i = 0; i < nargs; i++) {
-            argv.push_back(PyToJS(node, PyTuple_GetItem(args, i)));
+            argv[i] = PyToJS(node, PyTuple_GetItem(args, i));
         }
 
         PyThreadState* _save = PyEval_SaveThread();
