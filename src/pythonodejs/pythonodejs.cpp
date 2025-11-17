@@ -774,29 +774,29 @@ Local<Value> PyToJS(NodeEnv* node, PyObject* value)
         Py_DECREF(asyncio);
 
         return promise;
-    } else {
+    } else { // TODO Use PyMapping
         PyObject* dict = PyObject_GetAttrString(value, "__dict__");
         if (!dict || !PyDict_Check(dict)) {
             Py_XDECREF(dict);
             using v8::Null;
             return Null(node->isolate);
         }
-        PyObject *py_key, *py_val;
-        Py_ssize_t pos = 0;
         using v8::Name;
-        int len = PyDict_Size(value);
-        vector<Local<Name>> keys(len);
-        vector<Local<Value>> values(len);
-
-        int i = 0;
+        Py_ssize_t len = PyObject_Size(dict);
+        if (len < 0) {
+            PyErr_Clear();
+            return v8::Null(node->isolate);
+        }
+        Local<Object> obj = Object::New(node->isolate);
+        Py_ssize_t pos;
+        PyObject *py_key, *py_val;
         while (PyDict_Next(dict, &pos, &py_key, &py_val)) {
-            keys[i] = String::NewFromUtf8(node->isolate, PyUnicode_AsUTF8(py_key)).ToLocalChecked();
-            values[i++] = PyToJS(node, py_val);
+            obj->Set(context, String::NewFromUtf8(node->isolate, PyUnicode_AsUTF8(py_key)).ToLocalChecked(), PyToJS(node, py_val)).Check();
         }
 
         Py_DECREF(dict);
 
-        return Object::New(node->isolate, Null(node->isolate), keys.data(), values.data(), i);
+        return obj;
     }
 }
 static void cleanup_js_func(PyObject* capsule)
