@@ -49,7 +49,7 @@ def test_multiple_instances(request):
     del instance2  # Trigger full free
 
 
-def test_init_with_thread_pool():
+def test_init_with_thread_pool(request):
     project_root = request.config.rootpath
     tmp = str(project_root / "tmp.js")
     node = NodeJS(tmp, thread_pool_size=2)
@@ -59,7 +59,7 @@ def test_init_with_thread_pool():
     # Cleanup
 
 
-def test_init_invalid_args():
+def test_init_invalid_args(request):
     project_root = request.config.rootpath
     tmp = str(project_root / "tmp.js")
     with pytest.raises(TypeError):
