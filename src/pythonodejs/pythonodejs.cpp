@@ -528,8 +528,8 @@ Local<Value> PyToJS(NodeEnv* node, PyObject* value)
                 return Null(node->isolate); // Maybe error
             }
             size_t nwords = (nbytes + 63) / 64;
-            uint64_t* words = (uint64_t*)malloc(nwords);
-            if (_PyLong_AsByteArray((PyLongObject*)value, (unsigned char*)words, nwords * 8, 1, 0) < 0) {
+            uint64_t* words = (uint64_t*)malloc(nwords * sizeof(uint64_t));
+            if (_PyLong_AsByteArray((PyLongObject*)PyNumber_Absolute(value), (unsigned char*)words, nwords * 8, 1, 0) < 0) {
                 return Null(node->isolate); // Maybe error
             }
             int sign = _PyLong_Sign(value) == -1 ? 1 : 0;
