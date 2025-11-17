@@ -633,17 +633,13 @@ Local<Value> PyToJS(NodeEnv* node, PyObject* value)
             PyErr_Clear();
             return v8::Null(node->isolate);
         }
-        size_t ulen = static_cast<size_t>(len);
-        vector<Local<Name>> keys(ulen);
-        vector<Local<Value>> values(ulen);
+        Local<Object> obj = Object::New(node->isolate);
         Py_ssize_t pos;
         PyObject *py_key, *py_val;
-        int i = 0;
         while (PyDict_Next(value, &pos, &py_key, &py_val)) {
-            keys[i] = String::NewFromUtf8(node->isolate, PyUnicode_AsUTF8(py_key)).ToLocalChecked();
-            values[i++] = PyToJS(node, py_val);
+            obj->Set(context, String::NewFromUtf8(node->isolate, PyUnicode_AsUTF8(py_key)).ToLocalChecked(), PyToJS(node, py_val)).Check();
         }
-        return Object::New(node->isolate, Null(node->isolate), keys.data(), values.data(), i);
+        return obj;
     } else if (is_coroutine_like(value)) // Coroutine
     {
         PyObject* asyncio = PyImport_ImportModule("asyncio");
