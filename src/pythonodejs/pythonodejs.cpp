@@ -634,7 +634,7 @@ Local<Value> PyToJS(NodeEnv* node, PyObject* value)
             return v8::Null(node->isolate);
         }
         Local<Object> obj = Object::New(node->isolate);
-        Py_ssize_t pos;
+        Py_ssize_t pos = 0;
         PyObject *py_key, *py_val;
         printf("pythonodejs: PyToJS:  len=%d\n", (int)len);
         printf("    ");
