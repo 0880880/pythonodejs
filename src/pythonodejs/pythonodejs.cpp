@@ -625,23 +625,28 @@ Local<Value> PyToJS(NodeEnv* node, PyObject* value)
             arr->Set(context, i, PyToJS(node, PyTuple_GetItem(value, i))).Check();
         }
         return arr;
-    } else if (PyDict_Check(value)) // Object TODO use PyMapping
+    } else if (PyMapping_Check(value)) // Object
     {
         using v8::Name;
-        Py_ssize_t len = PyObject_Size(value);
+        Py_ssize_t len = PyMapping_Length(value);
         if (len < 0) {
             PyErr_Clear();
             return v8::Null(node->isolate);
         }
         Local<Object> obj = Object::New(node->isolate);
         Py_ssize_t pos = 0;
-        PyObject *py_key, *py_val;
         printf("pythonodejs: PyToJS:  len=%d\n", (int)len);
         printf("    ");
-        while (PyDict_Next(value, &pos, &py_key, &py_val)) {
+        PyObject* items = PyMapping_Items(value);
+        PyObject *py_key, *py_val;
+        for (Py_ssize_t i = 0; i < len; i++) {
+            PyObject* tuple = PyList_GET_ITEM(items, i);
+            py_key = PyTuple_GET_ITEM(tuple, 0);
+            py_val = PyTuple_GET_ITEM(tuple, 1);
             obj->Set(context, String::NewFromUtf8(node->isolate, PyUnicode_AsUTF8(py_key)).ToLocalChecked(), PyToJS(node, py_val)).Check();
             printf("setting %s, ", PyUnicode_AsUTF8(py_key));
         }
+        Py_DECREF(items);
         int obj_len = obj->GetOwnPropertyNames(context).ToLocalChecked()->Length();
         printf("\npythonodejs: PyToJS:  obj_len=%d\n", obj_len);
         return obj;
@@ -779,7 +784,7 @@ Local<Value> PyToJS(NodeEnv* node, PyObject* value)
         Py_DECREF(asyncio);
 
         return promise;
-    } else { // TODO Use PyMapping
+    } else if (PyObject_HasAttrString(value, "__dict__")) {
         PyObject* dict = PyObject_GetAttrString(value, "__dict__");
         if (!dict || !PyDict_Check(dict)) {
             Py_XDECREF(dict);
@@ -802,6 +807,10 @@ Local<Value> PyToJS(NodeEnv* node, PyObject* value)
         Py_DECREF(dict);
 
         return obj;
+    } else {
+        PyErr_Format(PyExc_TypeError,
+            "Cannot convert object to JS type",
+            Py_TYPE(value)->tp_name);
     }
 }
 static void cleanup_js_func(PyObject* capsule)
