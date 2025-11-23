@@ -809,9 +809,10 @@ Local<Value> PyToJS(NodeEnv* node, PyObject* value)
 
         return obj;
     } else {
-        PyErr_Format(PyExc_TypeError,
-            "Cannot convert object to JS type",
-            Py_TYPE(value)->tp_name);
+        node->isolate->ThrowException(
+            v8::Exception::Error(
+                v8::String::NewFromUtf8Literal(node->isolate, "Cannot convert object to JS type.")));
+        return v8::Null(node->isolate);
     }
 }
 static void cleanup_js_func(PyObject* capsule)
