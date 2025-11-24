@@ -26,10 +26,11 @@ jobs:
       - name: Setup ccache
         uses: actions/cache@v4
         with:
-          path: /home/runner/ccache
-          key: ${{ runner.os }}-ccache-${{ env.NODE_HASH }}
+          path: ~/.ccache
+          key: ${{ runner.os }}-ccache-v1-${{ env.NODE_HASH }}
           restore-keys: |
             ${{ runner.os }}-ccache-
+
       - name: Install deps & Setup
         run: |
           dnf update -y
@@ -53,15 +54,23 @@ jobs:
           clang --version
           cmake --version
           ninja --version
+
+          mkdir -p ~/.ccache
+          ccache --max-size=1G
+          ccache --set-config=compression=true
+          ccache --zero-stats
+          ccache --show-stats
+
       - name: Build libnode
+        env:
+          CCACHE_DIR: ~/.ccache
+          CC_host: ccache clang
+          CXX_host: ccache clang++
+          CC: ccache clang
+          CXX: ccache clang++
+          LDFLAGS_host: -fuse-ld=mold
+          LDFLAGS: -fuse-ld=mold
         run: |
-          export CCACHE_DIR=/home/runner/ccache
-          export CC_host="ccache clang"
-          export CXX_host="ccache clang++"
-          export CC="ccache clang"
-          export CXX="ccache clang++"
-          export LDFLAGS_host="-fuse-ld=mold"
-          export LDFLAGS="-fuse-ld=mold"
           cd include/node
           ./configure --shared --ninja
           make -j$(nproc)
