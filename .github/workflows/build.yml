@@ -14,6 +14,8 @@ jobs:
     name: Build NodeJS Linux
     runs-on: ubuntu-latest
     container: quay.io/pypa/manylinux_2_28_x86_64
+    env:
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
     steps:
       - uses: actions/checkout@v4
         with:
@@ -26,7 +28,7 @@ jobs:
       - name: Setup ccache
         uses: actions/cache@v4
         with:
-          path: ~/.ccache
+          path: .ccache
           key: ${{ runner.os }}-ccache-v1-${{ env.NODE_HASH }}
           restore-keys: |
             ${{ runner.os }}-ccache-
@@ -55,7 +57,6 @@ jobs:
           cmake --version
           ninja --version
 
-          mkdir -p ~/.ccache
           ccache --max-size=1G
           ccache --set-config=compression=true
           ccache --zero-stats
@@ -63,7 +64,6 @@ jobs:
 
       - name: Build libnode
         env:
-          CCACHE_DIR: ~/.ccache
           CC_host: ccache clang
           CXX_host: ccache clang++
           CC: ccache clang
