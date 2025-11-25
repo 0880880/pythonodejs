@@ -791,6 +791,7 @@ Local<Value> PyToJS(NodeEnv* node, PyObject* value)
         return promise;
     } else if (PyObject_HasAttrString(value, "__dict__")) {
         PyObject* dict = PyObject_GetAttrString(value, "__dict__");
+        printf("pythonodejs: %s has __dict__\n", tname);
         if (!dict || !PyMapping_Check(dict)) {
             Py_XDECREF(dict);
             using v8::Null;
@@ -798,6 +799,7 @@ Local<Value> PyToJS(NodeEnv* node, PyObject* value)
         }
         using v8::Name;
         Py_ssize_t len = PyMapping_Length(dict);
+        printf("pythonodejs: [%s].__dict__ has len=%d\n", tname, (int)len);
         if (len < 0) {
             PyErr_Clear();
             Py_DECREF(dict);
