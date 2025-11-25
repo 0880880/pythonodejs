@@ -800,6 +800,7 @@ Local<Value> PyToJS(NodeEnv* node, PyObject* value)
         Py_ssize_t len = PyMapping_Length(dict);
         if (len < 0) {
             PyErr_Clear();
+            Py_DECREF(dict);
             return v8::Null(node->isolate);
         }
         Local<Object> obj = Object::New(node->isolate);
