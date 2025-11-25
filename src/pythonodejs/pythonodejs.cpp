@@ -791,21 +791,24 @@ Local<Value> PyToJS(NodeEnv* node, PyObject* value)
         return promise;
     } else if (PyObject_HasAttrString(value, "__dict__")) {
         PyObject* dict = PyObject_GetAttrString(value, "__dict__");
-        if (!dict || !PyDict_Check(dict)) {
+        if (!dict || !PyMapping_Check(dict)) {
             Py_XDECREF(dict);
             using v8::Null;
             return Null(node->isolate);
         }
         using v8::Name;
-        Py_ssize_t len = PyObject_Size(dict);
+        Py_ssize_t len = PyMapping_Length(dict);
         if (len < 0) {
             PyErr_Clear();
             return v8::Null(node->isolate);
         }
         Local<Object> obj = Object::New(node->isolate);
-        Py_ssize_t pos;
+        PyObject* items = PyMapping_Items(value);
         PyObject *py_key, *py_val;
-        while (PyDict_Next(dict, &pos, &py_key, &py_val)) {
+        for (Py_ssize_t i = 0; i < len; i++) {
+            PyObject* tuple = PyList_GET_ITEM(items, i);
+            py_key = PyTuple_GET_ITEM(tuple, 0);
+            py_val = PyTuple_GET_ITEM(tuple, 1);
             obj->Set(context, String::NewFromUtf8(node->isolate, PyUnicode_AsUTF8(py_key)).ToLocalChecked(), PyToJS(node, py_val)).Check();
         }
 
