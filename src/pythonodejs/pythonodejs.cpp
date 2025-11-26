@@ -866,8 +866,7 @@ static void cleanup_js_func(PyObject* capsule)
     if (data) {
         data->js_func.Reset();
         if (data->method_def) {
-            PyMem_Free((void*)data->method_def->ml_name);
-            PyMem_Free((void*)data->method_def->ml_doc);
+            PyMem_Free((char*)data->method_def->ml_name);
             PyMem_Free(data->method_def);
         }
         PyMem_Free(data);
@@ -975,15 +974,15 @@ PyObject* JSToPy(NodeEnv* node, Local<Value> value)
         char* name_copy = (char*)PyMem_Malloc(name_utf8.length() + 1);
         strcpy(name_copy, *name_utf8);
 
-        std::string doc_str = "From NodeJS:\n" + std::string(*source_utf8);
-        char* doc_copy = (char*)PyMem_Malloc(doc_str.length() + 1);
-        strcpy(doc_copy, doc_str.c_str());
+        // std::string doc_str = "From NodeJS:\n" + std::string(*source_utf8);
+        // char* doc_copy = (char*)PyMem_Malloc(doc_str.length() + 1);
+        // strcpy(doc_copy, doc_str.c_str());
 
         PyMethodDef* def = (PyMethodDef*)PyMem_Malloc(sizeof(PyMethodDef));
         def->ml_name = name_copy;
         def->ml_meth = js_func_handler;
         def->ml_flags = METH_VARARGS;
-        def->ml_doc = doc_copy;
+        def->ml_doc = nullptr;
 
         data->method_def = def;
 
