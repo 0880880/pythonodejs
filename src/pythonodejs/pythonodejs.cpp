@@ -680,9 +680,6 @@ MaybeLocal<Value> PyToJS(NodeEnv* node, PyObject* value)
         }
         Local<Object> obj = Object::New(node->isolate);
         Py_ssize_t pos = 0;
-        printf("pythonodejs: PyMapping\n");
-        printf("pythonodejs: PyToJS:  len=%d\n", (int)len);
-        printf("    ");
         PyObject* items = PyMapping_Items(value);
         PyObject *py_key, *py_val;
         for (Py_ssize_t i = 0; i < len; i++) {
@@ -690,11 +687,9 @@ MaybeLocal<Value> PyToJS(NodeEnv* node, PyObject* value)
             py_key = PyTuple_GET_ITEM(tuple, 0);
             py_val = PyTuple_GET_ITEM(tuple, 1);
             obj->Set(context, String::NewFromUtf8(node->isolate, PyUnicode_AsUTF8(py_key)).ToLocalChecked(), PyToJS(node, py_val).ToLocalChecked()).Check();
-            printf("setting %s, ", PyUnicode_AsUTF8(py_key));
         }
         Py_DECREF(items);
         int obj_len = obj->GetOwnPropertyNames(context).ToLocalChecked()->Length();
-        printf("\npythonodejs: PyToJS:  obj_len=%d\n", obj_len);
         return obj;
     } else if (is_coroutine_like(value)) // Coroutine
     {
@@ -832,7 +827,6 @@ MaybeLocal<Value> PyToJS(NodeEnv* node, PyObject* value)
         return promise;
     } else if (PyObject_HasAttrString(value, "__dict__")) {
         PyObject* dict = PyObject_GetAttrString(value, "__dict__");
-        printf("pythonodejs: %s has __dict__\n", tname);
         if (!dict || !PyMapping_Check(dict)) {
             Py_XDECREF(dict);
             using v8::Null;
@@ -840,7 +834,6 @@ MaybeLocal<Value> PyToJS(NodeEnv* node, PyObject* value)
         }
         using v8::Name;
         Py_ssize_t len = PyMapping_Length(dict);
-        printf("pythonodejs: [%s].__dict__ has len=%d\n", tname, (int)len);
         if (len < 0) {
             PyErr_Clear();
             Py_DECREF(dict);
@@ -1021,23 +1014,17 @@ PyObject* JSToPy(NodeEnv* node, Local<Value> value)
         Local<Array> keys = obj->GetOwnPropertyNames(context).ToLocalChecked();
         size_t length = keys->Length();
         PyObject* dict = _PyDict_NewPresized(length);
-        printf("pythonodejs: JSToPy:  len=%d\n", (int)length);
-        printf("pythonodejs: JSToPy:  len=%d\n", (int)length);
-        printf("                      ");
         visited->Set(context, obj, v8::External::New(node->isolate, dict)).ToLocalChecked(); // TODO Catch errors
         for (int i = 0; i < length; i++) {
             Local<Value> key = keys->Get(node->setup->context(), i).ToLocalChecked();
             Local<String> str = key->ToString(context).ToLocalChecked();
             String::Utf8Value utf8(node->isolate, str);
 
-            printf("Setting %s, ", *utf8);
-
             Local<Value> val = obj->Get(node->setup->context(), key).ToLocalChecked();
 
             if (!visited->Has(context, val).ToChecked())
                 PyDict_SetItemString(dict, *utf8, JSToPy(node, val));
         }
-        printf("\npythonodejs: JSToPy:  py_len=%d\n", (int)PyDict_Size(dict));
         visited->Delete(context, obj).ToChecked(); // Catch errors
         return dict;
     }
