@@ -23,7 +23,7 @@ def test_types_js_to_py(node):
     list_v = node.eval_cjs("['abc', 123, 'def']")
     assert isinstance(list_v, list)
     assert list_v == ["abc", 123, "def"]
-    dict_v = node.eval_cjs('{"a": 1, "b": 2}')
+    dict_v = node.eval_cjs('({"a": 1, "b": 2})')
     assert isinstance(dict_v, dict)
     assert dict_v == {"a": 1, "b": 2}
     bool_true = node.eval_cjs("true")
