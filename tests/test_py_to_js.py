@@ -91,12 +91,10 @@ def test_object_py_to_js(node):
     obj_v = echo_func(TestObj())
     assert obj_v == {"a": 1, "b": "test"}
 
-    # Without __dict__
-    class NoDict:
+    class Empty:
         pass
 
     no_dict_v = echo_func(NoDict())
-    assert no_dict_v is None  # Falls to Null
-    # Error case
-    with pytest.raises(AttributeError):
+    assert no_dict_v is {}
+    with pytest.raises(RuntimeError):
         echo_func(object())  # No __dict__
