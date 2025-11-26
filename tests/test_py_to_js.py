@@ -94,7 +94,7 @@ def test_object_py_to_js(node):
     class Empty:
         pass
 
-    no_dict_v = echo_func(NoDict())
+    no_dict_v = echo_func(Empty())
     assert no_dict_v is {}
     with pytest.raises(RuntimeError):
         echo_func(object())  # No __dict__
