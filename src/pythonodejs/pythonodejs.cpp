@@ -851,6 +851,7 @@ MaybeLocal<Value> PyToJS(NodeEnv* node, PyObject* value)
         }
 
         Py_DECREF(dict);
+        Py_DECREF(items);
 
         return obj;
     } else {
