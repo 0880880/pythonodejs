@@ -905,7 +905,8 @@ PyObject* JSToPy(NodeEnv* node, Local<Value> value)
             Local<Value>())
                                             .ToLocalChecked();
         (void)promise->Catch(context, catch_handler);
-        Py_RETURN_NOTIMPLEMENTED;
+        PyErr_SetString(PyExc_NotImplementedError, "JS to Py promise is not implemented");
+        return NULL;
     } else if (value->IsNativeError()) { // Exception
         Local<v8::Object> err = value.As<v8::Object>();
         v8::Local<v8::String> msg_key = v8::String::NewFromUtf8(node->isolate, "message").ToLocalChecked();
