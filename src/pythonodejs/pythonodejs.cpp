@@ -806,7 +806,7 @@ Local<Value> PyToJS(NodeEnv* node, PyObject* value)
             return v8::Null(node->isolate);
         }
         Local<Object> obj = Object::New(node->isolate);
-        PyObject* items = PyMapping_Items(value);
+        PyObject* items = PyMapping_Items(dict);
         PyObject *py_key, *py_val;
         for (Py_ssize_t i = 0; i < len; i++) {
             PyObject* tuple = PyList_GET_ITEM(items, i);
