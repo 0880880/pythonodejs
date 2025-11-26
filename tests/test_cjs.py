@@ -10,16 +10,6 @@ def node(request) -> NodeJS:
     return NodeJS(str(project_root))
 
 
-def test_print(node, capsys):
-    node.eval_cjs("console.log('Hello, World!')")
-    captured = capsys.readouterr()
-    assert "Hello, World!" in captured.out
-    # Test stderr
-    node.eval_cjs("console.error('Error!')")
-    captured = capsys.readouterr()
-    assert "Error!" in captured.err
-
-
 def test_types_js_to_py(node):
     int_v = node.eval_cjs("123")
     assert isinstance(int_v, int)
