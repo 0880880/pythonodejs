@@ -1077,6 +1077,10 @@ void NodeEnvFree(NodeEnv* node)
         node->runInThisContext.Reset();
         node->visited.Reset();
         node->promises.clear();
+
+        for (auto& pair : node->promises) {
+            pair.second.Reset();
+        }
     }
 }
 
