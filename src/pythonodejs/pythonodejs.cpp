@@ -516,6 +516,11 @@ static void cleanup_py_promise(PyObject* capsule)
     }
 }
 
+void cleanup_py_function(const v8::WeakCallbackInfo<PyFunctionData>& info)
+{
+    delete info.GetParameter();
+}
+
 int is_coroutine_like(PyObject* obj)
 {
     if (PyCoro_CheckExact(obj)) {
@@ -583,10 +588,22 @@ MaybeLocal<Value> PyToJS(NodeEnv* node, PyObject* value)
             .ToLocalChecked();
     } else if (PyFunction_Check(value)) // Function
     {
+        PyFunctionData* data = new PyFunctionData { node, value };
+
+        Local<v8::External> ext = External::New(node->isolate, data);
+
+        v8::Persistent<External> persistent(node->isolate, ext);
+        persistent.SetWeak(
+            data,
+            cleanup_py_function,
+            v8::WeakCallbackType::kParameter);
+
         Local<FunctionTemplate> tpl = FunctionTemplate::New(
-            node->isolate, py_func_handler, External::New(node->isolate, new PyFunctionData { node, value }));
-        Local<Function> fn = tpl->GetFunction(context).ToLocalChecked();
-        return fn;
+            node->isolate,
+            py_func_handler,
+            ext);
+
+        return tpl->GetFunction(node->isolate->GetCurrentContext()).ToLocalChecked();
     } else if (PyExceptionClass_Check(value)) { // Exception
         PyObject* exc = PyObject_CallObject(value, NULL);
         if (!exc) {
