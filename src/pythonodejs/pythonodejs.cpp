@@ -21,6 +21,7 @@
 #include "pyport.h"
 #include "pystate.h"
 #include "unicodeobject.h"
+#include "v8-exception.h"
 #include "v8-external.h"
 #include "v8-local-handle.h"
 #include "v8-object.h"
@@ -269,7 +270,7 @@ NodeEnv* NodeEnvCreate(const char* absolute_path)
 }
 
 PyObject* JSToPy(NodeEnv* node, Local<Value> value);
-Local<Value> PyToJS(NodeEnv* node, PyObject* value);
+MaybeLocal<Value> PyToJS(NodeEnv* node, PyObject* value);
 
 typedef struct {
     NodeEnv* node;
@@ -359,7 +360,11 @@ static PyObject* js_promise_handler(PyObject* self, PyObject* future)
 
         V8_SCOPE(node);
         Local<Promise::Resolver> resolver = data->js_resolver.Get(node->isolate);
-        Local<Value> js_value = PyToJS(node, result);
+        MaybeLocal<Value> maybe_js_value = PyToJS(node, result);
+        Local<Value> js_value;
+        if (!maybe_js_value.ToLocal(&js_value)) {
+            // TODO handle error
+        }
 
         v8::TryCatch try_catch(node->isolate);
         v8::Maybe<bool> maybe_result = resolver->Resolve(node->setup->context(), js_value);
@@ -398,14 +403,23 @@ static PyObject* js_func_handler(PyObject* self, PyObject* args)
 
         Py_END_ALLOW_THREADS;
 
+        v8::TryCatch try_catch(node->isolate);
         for (int i = 0; i < nargs; i++) {
-            argv[i] = PyToJS(node, PyTuple_GetItem(args, i));
+            MaybeLocal<Value> maybe_arg = PyToJS(node, PyTuple_GetItem(args, i));
+            Local<Value> arg;
+            if (!maybe_arg.ToLocal(&arg)) {
+                v8::String::Utf8Value error(node->isolate, try_catch.Exception());
+                const char* msg = *error ? *error : "Unknown V8 exception";
+                PyErr_Format(PyExc_RuntimeError, "V8 error at function \"%s\": %s", data->method_def->ml_name, msg);
+                return NULL;
+            }
+            argv[i] = arg;
         }
 
         PyThreadState* _save = PyEval_SaveThread();
 
         Local<Value> recv = node->setup->context()->Global(); // TODO Fix recv for objects
-        v8::TryCatch try_catch(node->isolate);
+
         MaybeLocal<Value> maybe_result = func->Call(node->setup->context(), recv, nargs, argv.data());
 
         PyEval_RestoreThread(_save);
@@ -472,12 +486,21 @@ void py_func_handler(const FunctionCallbackInfo<Value>& args)
         return;
     }
 
-    Local<Value> js_result = PyToJS(func_data->node, res);
+    v8::TryCatch try_catch(isolate);
+
+    MaybeLocal<Value> maybe_js_result = PyToJS(func_data->node, res);
     Py_DECREF(res);
 
-    PyGILState_Release(gstate);
+    Local<Value> js_result;
+    if (!maybe_js_result.ToLocal(&js_result)) {
+        try_catch.ReThrow();
 
+        PyGILState_Release(gstate);
+        return;
+    }
     args.GetReturnValue().Set(js_result);
+
+    PyGILState_Release(gstate);
 }
 
 static void cleanup_py_promise(PyObject* capsule)
@@ -506,7 +529,7 @@ int is_coroutine_like(PyObject* obj)
     return 0;
 }
 
-Local<Value> PyToJS(NodeEnv* node, PyObject* value)
+MaybeLocal<Value> PyToJS(NodeEnv* node, PyObject* value)
 {
     Local<Context> context = node->setup->context();
     const char* tname = Py_TYPE(value)->tp_name;
@@ -618,7 +641,7 @@ Local<Value> PyToJS(NodeEnv* node, PyObject* value)
         int len = PyList_Size(value);
         Local<Array> arr = Array::New(node->isolate, len);
         for (int i = 0; i < len; i++) {
-            arr->Set(context, i, PyToJS(node, PyList_GetItem(value, i))).Check();
+            arr->Set(context, i, PyToJS(node, PyList_GetItem(value, i)).ToLocalChecked()).Check();
         }
         return arr;
     } else if (PyTuple_Check(value)) // Array
@@ -626,7 +649,7 @@ Local<Value> PyToJS(NodeEnv* node, PyObject* value)
         int len = PyTuple_Size(value);
         Local<Array> arr = Array::New(node->isolate, len);
         for (int i = 0; i < len; i++) {
-            arr->Set(context, i, PyToJS(node, PyTuple_GetItem(value, i))).Check();
+            arr->Set(context, i, PyToJS(node, PyTuple_GetItem(value, i)).ToLocalChecked()).Check();
         }
         return arr;
     } else if (PyMapping_Check(value)) // Object
@@ -648,7 +671,7 @@ Local<Value> PyToJS(NodeEnv* node, PyObject* value)
             PyObject* tuple = PyList_GET_ITEM(items, i);
             py_key = PyTuple_GET_ITEM(tuple, 0);
             py_val = PyTuple_GET_ITEM(tuple, 1);
-            obj->Set(context, String::NewFromUtf8(node->isolate, PyUnicode_AsUTF8(py_key)).ToLocalChecked(), PyToJS(node, py_val)).Check();
+            obj->Set(context, String::NewFromUtf8(node->isolate, PyUnicode_AsUTF8(py_key)).ToLocalChecked(), PyToJS(node, py_val).ToLocalChecked()).Check();
             printf("setting %s, ", PyUnicode_AsUTF8(py_key));
         }
         Py_DECREF(items);
@@ -812,7 +835,7 @@ Local<Value> PyToJS(NodeEnv* node, PyObject* value)
             PyObject* tuple = PyList_GET_ITEM(items, i);
             py_key = PyTuple_GET_ITEM(tuple, 0);
             py_val = PyTuple_GET_ITEM(tuple, 1);
-            obj->Set(context, String::NewFromUtf8(node->isolate, PyUnicode_AsUTF8(py_key)).ToLocalChecked(), PyToJS(node, py_val)).Check();
+            obj->Set(context, String::NewFromUtf8(node->isolate, PyUnicode_AsUTF8(py_key)).ToLocalChecked(), PyToJS(node, py_val).ToLocalChecked()).Check();
         }
 
         Py_DECREF(dict);
