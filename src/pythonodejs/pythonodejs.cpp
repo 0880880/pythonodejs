@@ -508,10 +508,11 @@ static void cleanup_py_promise(PyObject* capsule)
     JSPromiseData* data = (JSPromiseData*)PyCapsule_GetPointer(capsule, "promise_data");
     if (data) {
         data->js_resolver.Reset();
-        if (data->method_name)
-            PyMem_Free(data->method_name);
-        if (data->method_def)
+        if (data->method_def) {
+            PyMem_Free((void*)data->method_def->ml_name);
             PyMem_Free(data->method_def);
+            data->method_def = nullptr;
+        }
         PyMem_Free(data);
     }
 }
