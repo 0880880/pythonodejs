@@ -586,8 +586,7 @@ MaybeLocal<Value> PyToJS(NodeEnv* node, PyObject* value)
         return String::NewFromUtf8(
             node->isolate,
             PyUnicode_AsUTF8(value),
-            NewStringType::kNormal)
-            .ToLocalChecked();
+            NewStringType::kNormal);
     } else if (PyFunction_Check(value)) // Function
     {
         PyFunctionData* data = new PyFunctionData { node, value };
@@ -605,7 +604,7 @@ MaybeLocal<Value> PyToJS(NodeEnv* node, PyObject* value)
             py_func_handler,
             ext);
 
-        return tpl->GetFunction(node->isolate->GetCurrentContext()).ToLocalChecked();
+        return tpl->GetFunction(node->isolate->GetCurrentContext());
     } else if (PyExceptionClass_Check(value)) { // Exception
         PyObject* exc = PyObject_CallObject(value, NULL);
         if (!exc) {
@@ -654,7 +653,7 @@ MaybeLocal<Value> PyToJS(NodeEnv* node, PyObject* value)
         time_t unix_time = mktime(&t);
         double unix_ms = static_cast<double>(unix_time) * 1000;
 
-        return v8::Date::New(context, unix_ms).ToLocalChecked();
+        return v8::Date::New(context, unix_ms);
     } else if (PyList_Check(value)) // Array
     {
         int len = PyList_Size(value);
