@@ -761,7 +761,7 @@ MaybeLocal<Value> PyToJS(NodeEnv* node, PyObject* value)
         PyObject* callback = PyCFunction_NewEx(def, capsule, NULL);
 
         if (!callback) {
-            PyMem_Free(name_copy);
+            PyMem_Free((char*)def->ml_name);
             PyMem_Free(def);
             Py_DECREF(asyncio);
             return v8::Null(node->isolate);
