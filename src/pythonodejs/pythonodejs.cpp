@@ -690,7 +690,6 @@ MaybeLocal<Value> PyToJS(NodeEnv* node, PyObject* value)
             obj->Set(context, String::NewFromUtf8(node->isolate, PyUnicode_AsUTF8(py_key)).ToLocalChecked(), PyToJS(node, py_val).ToLocalChecked()).Check();
         }
         Py_DECREF(items);
-        int obj_len = obj->GetOwnPropertyNames(context).ToLocalChecked()->Length();
         return obj;
     } else if (is_coroutine_like(value)) // Coroutine
     {
