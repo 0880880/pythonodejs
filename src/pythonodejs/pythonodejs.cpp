@@ -767,8 +767,8 @@ MaybeLocal<Value> PyToJS(NodeEnv* node, PyObject* value)
             return v8::Null(node->isolate);
         }
 
-        PyObject* get_event_loop = PyObject_GetAttrString(asyncio, "get_event_loop");
-        if (!get_event_loop) {
+        PyObject* create_task = PyObject_GetAttrString(asyncio, "create_task");
+        if (!create_task) {
             PyErr_Print();
             Py_DECREF(callback);
             PyMem_Free(name_copy);
@@ -777,35 +777,11 @@ MaybeLocal<Value> PyToJS(NodeEnv* node, PyObject* value)
             return v8::Null(node->isolate);
         }
 
-        PyObject* loop = PyObject_CallObject(get_event_loop, NULL);
-        Py_DECREF(get_event_loop);
-
-        if (!loop) {
-            PyErr_Print();
-            Py_DECREF(callback);
-            PyMem_Free(name_copy);
-            PyMem_Free(def);
-            Py_DECREF(asyncio);
-            return v8::Null(node->isolate);
-        }
-
-        PyObject* ensure_future = PyObject_GetAttrString(asyncio, "ensure_future");
-        if (!ensure_future) {
-            PyErr_Print();
-            Py_DECREF(loop);
-            Py_DECREF(callback);
-            PyMem_Free(name_copy);
-            PyMem_Free(def);
-            Py_DECREF(asyncio);
-            return v8::Null(node->isolate);
-        }
-
-        PyObject* task = PyObject_CallFunctionObjArgs(ensure_future, value, NULL);
-        Py_DECREF(ensure_future);
+        PyObject* task = PyObject_CallFunctionObjArgs(create_task, value, NULL);
+        Py_DECREF(create_task);
 
         if (!task) {
             PyErr_Print();
-            Py_DECREF(loop);
             Py_DECREF(callback);
             PyMem_Free(name_copy);
             PyMem_Free(def);
@@ -820,7 +796,6 @@ MaybeLocal<Value> PyToJS(NodeEnv* node, PyObject* value)
         Py_XDECREF(result);
 
         Py_DECREF(task);
-        Py_DECREF(loop);
         Py_DECREF(callback);
         Py_DECREF(asyncio);
 
