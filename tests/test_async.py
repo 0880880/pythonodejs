@@ -27,9 +27,9 @@ def test_coro_py_to_js(node):
 
 
 def test_promise_js_to_py(node):
-    promise_v = node.eval_cjs("Promise.resolve(42)")
-    assert promise_v is NotImplemented
-    reject_p = node.eval_cjs("Promise.reject('error')")
-    assert reject_p is NotImplemented
-    pending_p = node.eval_cjs("new Promise(() => {})")
-    assert pending_p is NotImplemented
+    with pytest.raises(NotImplementedError):
+        node.eval_cjs("Promise.resolve(42)")
+    with pytest.raises(NotImplementedError):
+        node.eval_cjs("Promise.reject('error')")
+    with pytest.raises(NotImplementedError):
+        node.eval_cjs("new Promise(() => {})")
