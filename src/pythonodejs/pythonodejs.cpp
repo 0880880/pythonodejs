@@ -1200,6 +1200,25 @@ PyObject* NodeJS_import(NodeJSObject* self, PyObject* arg)
     }
 }
 
+PyObject* NodeJS_poll(NodeJSObject* self)
+{
+    if (!self->node) {
+        Py_RETURN_FALSE;
+    }
+
+    V8_SCOPE(self->node);
+
+    self->node->setup->context()->GetMicrotaskQueue()->PerformCheckpoint(self->node->isolate);
+
+    SpinEventLoopAsync(self->node->env);
+
+    if (uv_loop_alive(self->node->loop)) {
+        Py_RETURN_TRUE;
+    } else {
+        Py_RETURN_FALSE;
+    }
+}
+
 static PyMethodDef NodeJS_methods[] = {
     { "eval_cjs", (PyCFunction)NodeJS_eval, METH_O,
         "Evaluates a piece of CJS code." },
@@ -1207,6 +1226,7 @@ static PyMethodDef NodeJS_methods[] = {
         "Imports a CJS file." },
     { "import_esm", (PyCFunction)NodeJS_import, METH_O,
         "Imports an ES module." },
+    { "poll", (PyCFunction)NodeJS_poll, METH_NOARGS, "Runs one tick of the Node.js event loop." },
     { NULL, NULL, 0, NULL } // Sentinel
 };
 
