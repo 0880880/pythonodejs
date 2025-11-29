@@ -1,5 +1,5 @@
-from ._pythonodejs import NodeJS
-from ._event_loop import event_loop_driver
+from .nodejs import NodeJS
+from .event_loop import event_loop_driver
 
 try:
     from ._version import version as __version__  # type: ignore
