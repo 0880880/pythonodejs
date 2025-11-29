@@ -984,6 +984,8 @@ static void cleanup_js_func(PyObject* capsule)
     }
 }
 
+static PyObject* re_compile_func = NULL;
+
 PyObject* JSToPy(NodeEnv* node, Local<Value> value)
 {
     Local<Context> context = node->setup->context();
@@ -1149,6 +1151,21 @@ PyObject* JSToPy(NodeEnv* node, Local<Value> value)
 
         PyObject* capsule = PyCapsule_New(data, name, NULL);
         return (PyObject*)JSSymbol_New(capsule);
+    } else if (value->IsRegExp()) { // Pattern
+        Local<v8::RegExp> regex = value.As<v8::RegExp>();
+        v8::String::Utf8Value utf8(node->isolate, regex->GetSource());
+        PyObject* pattern_obj = PyUnicode_FromString(*utf8);
+        if (!pattern_obj)
+            return NULL;
+
+        PyObject* compiled = PyObject_CallFunctionObjArgs(re_compile_func, pattern_obj, NULL);
+        Py_DECREF(pattern_obj);
+
+        if (!compiled) {
+            PyErr_Print();
+            return NULL;
+        }
+        return compiled;
     } else { // Any Object
         Local<Object> obj = value.As<Object>();
         Local<Array> keys = obj->GetOwnPropertyNames(context).ToLocalChecked();
@@ -1444,6 +1461,7 @@ static void pythonodejs_free(void* m)
 {
     if (node_initialized)
         NodeFree();
+    Py_XDECREF(re_compile_func);
 }
 
 // Module definition
@@ -1484,6 +1502,20 @@ PyMODINIT_FUNC PyInit__pythonodejs(void)
     if (PyModule_AddObject(m, "JSSymbol", (PyObject*)&JSSymbolType) < 0) {
         Py_DECREF(&JSSymbolType);
         Py_DECREF(m);
+        return NULL;
+    }
+
+    PyObject* re_module = PyImport_ImportModule("re");
+    if (!re_module) {
+        PyErr_Print();
+        return NULL;
+    }
+
+    re_compile_func = PyObject_GetAttrString(re_module, "compile");
+    Py_DECREF(re_module);
+
+    if (!re_compile_func) {
+        PyErr_Print();
         return NULL;
     }
 
