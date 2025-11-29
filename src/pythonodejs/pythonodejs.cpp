@@ -294,6 +294,7 @@ typedef struct {
     NodeEnv* node;
     Global<v8::Symbol>* symbol;
     char* name;
+    Py_hash_t hash;
 } JSSymbolData;
 
 static PyObject* js_promise_handler(PyObject* self, PyObject* future)
@@ -573,24 +574,8 @@ static void JSSymbol_dealloc(JSSymbol* self)
 
 static Py_hash_t JSSymbol_hash(JSSymbol* self)
 {
-    int identityHash;
-    {
-        JSSymbolData* data = (JSSymbolData*)PyCapsule_GetPointer(self->capsule, NULL);
-        V8_SCOPE(data->node);
-        Local<v8::Symbol> symbol = data->symbol->Get(data->node->isolate);
-        identityHash
-            = symbol->GetIdentityHash();
-    }
-    PyObject* s = PyUnicode_FromString("JS");
-    PyObject* i = PyLong_FromLong(identityHash);
-
-    PyObject* t = PyTuple_New(2);
-    PyTuple_SET_ITEM(t, 0, s);
-    PyTuple_SET_ITEM(t, 1, i);
-
-    Py_hash_t h = PyObject_Hash(t);
-    Py_DECREF(t);
-    return h;
+    JSSymbolData* data = (JSSymbolData*)PyCapsule_GetPointer(self->capsule, NULL);
+    return data->hash;
 }
 
 static PyObject* JSSymbol_richcompare(JSSymbol* self, PyObject* other, int op);
@@ -1150,6 +1135,18 @@ PyObject* JSToPy(NodeEnv* node, Local<Value> value)
         data->node = node;
         data->symbol = global_symbol;
         data->name = name;
+
+        PyObject* s = PyUnicode_FromString("JS");
+        PyObject* i = PyLong_FromLong(symbol->GetIdentityHash());
+
+        PyObject* t = PyTuple_New(2);
+        PyTuple_SET_ITEM(t, 0, s);
+        PyTuple_SET_ITEM(t, 1, i);
+
+        Py_hash_t h = PyObject_Hash(t);
+        Py_DECREF(t);
+        data->hash = h;
+
         PyObject* capsule = PyCapsule_New(data, name, NULL);
         return (PyObject*)JSSymbol_New(capsule);
     } else { // Any Object
