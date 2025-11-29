@@ -1480,5 +1480,12 @@ PyMODINIT_FUNC PyInit__pythonodejs(void)
         return NULL;
     }
 
+    Py_INCREF(&JSSymbolType);
+    if (PyModule_AddObject(m, "JSSymbol", (PyObject*)&JSSymbolType) < 0) {
+        Py_DECREF(&JSSymbolType);
+        Py_DECREF(m);
+        return NULL;
+    }
+
     return m;
 }
