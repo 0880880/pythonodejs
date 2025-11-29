@@ -984,6 +984,9 @@ PyObject* JSToPy(NodeEnv* node, Local<Value> value)
         }
         visited->Delete(context, arr).ToChecked(); // Catch errors
         return list;
+    } else if (value->IsMap()) { // Map
+        PyErr_SetString(PyExc_TypeError, "NodeJS: Cannot convert JS Map – please convert to plain object with Object.fromEntries(map) or Array.from(map) before passing to Python");
+        return NULL;
     } else { // Any Object
         Local<Object> obj = value.As<Object>();
         Local<Array> keys = obj->GetOwnPropertyNames(context).ToLocalChecked();
