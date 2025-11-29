@@ -290,6 +290,12 @@ typedef struct {
     PyObject* py_func;
 } PyFunctionData;
 
+typedef struct {
+    NodeEnv* node;
+    Global<v8::Symbol>* symbol;
+    char* name;
+} JSSymbolData;
+
 static PyObject* js_promise_handler(PyObject* self, PyObject* future)
 {
     JSPromiseData* data = (JSPromiseData*)PyCapsule_GetPointer(self, "promise_data");
@@ -535,6 +541,147 @@ int is_coroutine_like(PyObject* obj)
     return 0;
 }
 
+typedef struct {
+    PyObject_HEAD;
+    PyObject* capsule;
+} JSSymbol;
+
+static PyObject* JSSymbol_repr(JSSymbol* self)
+{
+    if (self->capsule && PyCapsule_CheckExact(self->capsule)) {
+        const char* capsule_name = PyCapsule_GetName(self->capsule);
+        if (capsule_name != NULL) {
+            const char* name = capsule_name;
+            return PyUnicode_FromFormat("<JSSymbol: Symbol(%s)>", name);
+        }
+    }
+
+    return PyUnicode_FromString("<JSSymbol: Symbol>");
+}
+
+static void JSSymbol_dealloc(JSSymbol* self)
+{
+    JSSymbolData* data = (JSSymbolData*)PyCapsule_GetPointer(self->capsule, NULL);
+    data->symbol->Reset();
+    delete data->symbol;
+    if (data->name)
+        free(data->name);
+    delete data;
+    Py_XDECREF(self->capsule);
+    Py_TYPE(self)->tp_free((PyObject*)self);
+}
+
+static Py_hash_t JSSymbol_hash(JSSymbol* self)
+{
+    int identityHash;
+    {
+        JSSymbolData* data = (JSSymbolData*)PyCapsule_GetPointer(self->capsule, NULL);
+        V8_SCOPE(data->node);
+        Local<v8::Symbol> symbol = data->symbol->Get(data->node->isolate);
+        identityHash
+            = symbol->GetIdentityHash();
+    }
+    PyObject* s = PyUnicode_FromString("JS");
+    PyObject* i = PyLong_FromLong(identityHash);
+
+    PyObject* t = PyTuple_New(2);
+    PyTuple_SET_ITEM(t, 0, s);
+    PyTuple_SET_ITEM(t, 1, i);
+
+    Py_hash_t h = PyObject_Hash(t);
+    Py_DECREF(t);
+    return h;
+}
+
+static PyObject* JSSymbol_richcompare(JSSymbol* self, PyObject* other, int op);
+
+static PyMethodDef JSSymbol_methods[] = {
+    { NULL } /* Sentinel */
+};
+static PyTypeObject JSSymbolType = {
+    PyVarObject_HEAD_INIT(NULL, 0) "pythonodejs.JSSymbol", // tp_name
+    sizeof(JSSymbol), // tp_basicsize
+    0, // tp_itemsize
+    (destructor)JSSymbol_dealloc, // tp_dealloc
+    0, // tp_vectorcall_offset / tp_print (depending on Python version)
+    0, // tp_getattr
+    0, // tp_setattr
+    0, // tp_as_async
+    (reprfunc)JSSymbol_repr, // tp_repr
+    0, // tp_as_number
+    0, // tp_as_sequence
+    0, // tp_as_mapping
+    (hashfunc)JSSymbol_hash, // tp_hash
+    0, // tp_call
+    0, // tp_str
+    0, // tp_getattro
+    0, // tp_setattro
+    0, // tp_as_buffer
+    Py_TPFLAGS_DEFAULT, // tp_flags
+    0, // tp_doc
+    0, // tp_traverse
+    0, // tp_clear
+    (richcmpfunc)JSSymbol_richcompare, // tp_richcompare
+    0, // tp_weaklistoffset
+    0, // tp_iter
+    0, // tp_iternext
+    JSSymbol_methods, // tp_methods
+    0, // tp_members
+    0, // tp_getset
+    0, // tp_base
+    0, // tp_dict
+    0, // tp_descr_get
+    0, // tp_descr_set
+    0, // tp_dictoffset
+    NULL, // tp_init
+    0, // tp_alloc
+    NULL, // tp_new
+};
+
+static PyObject* JSSymbol_richcompare(JSSymbol* self, PyObject* other, int op)
+{
+    if (!PyObject_TypeCheck(other, &JSSymbolType) || op == Py_LT || op == Py_GT) {
+        Py_RETURN_FALSE;
+    }
+
+    JSSymbol* o = (JSSymbol*)other;
+
+    {
+        JSSymbolData* data = (JSSymbolData*)PyCapsule_GetPointer(self->capsule, NULL);
+        JSSymbolData* other_data = (JSSymbolData*)PyCapsule_GetPointer(self->capsule, NULL);
+        if (data->node != other_data->node) {
+            PyErr_SetString(PyExc_RuntimeError, "Invalid NodeJS environment");
+            return NULL;
+        }
+        V8_SCOPE(data->node);
+        Local<v8::Symbol> symbol = data->symbol->Get(data->node->isolate);
+        Local<v8::Symbol> other_symbol = other_data->symbol->Get(data->node->isolate);
+        if (symbol->StrictEquals(other_symbol)) {
+            return op == Py_LE || op == Py_GE || op == Py_EQ ? Py_True : Py_False;
+        } else {
+            return op == Py_NE ? Py_True : Py_False;
+        }
+    }
+
+    Py_RETURN_FALSE;
+}
+
+JSSymbol* JSSymbol_New(PyObject* capsule)
+{
+    if (!PyCapsule_CheckExact(capsule)) {
+        PyErr_SetString(PyExc_TypeError, "Expected a PyCapsule object");
+        return NULL;
+    }
+
+    JSSymbol* self = PyObject_New(JSSymbol, &JSSymbolType);
+    if (!self)
+        return NULL;
+
+    Py_INCREF(capsule);
+    self->capsule = capsule;
+    return self;
+}
+
 MaybeLocal<Value> PyToJS(NodeEnv* node, PyObject* value)
 {
     Local<Context> context = node->setup->context();
@@ -606,6 +753,10 @@ MaybeLocal<Value> PyToJS(NodeEnv* node, PyObject* value)
             ext);
 
         return tpl->GetFunction(node->isolate->GetCurrentContext());
+    } else if (PyObject_TypeCheck(value, &JSSymbolType)) { // Symbol
+        JSSymbol* jsym = (JSSymbol*)value;
+        JSSymbolData* data = (JSSymbolData*)jsym->capsule;
+        return data->symbol->Get(node->isolate);
     } else if (PyExceptionClass_Check(value)) { // Exception
         PyObject* exc = PyObject_CallObject(value, NULL);
         if (!exc) {
@@ -987,6 +1138,20 @@ PyObject* JSToPy(NodeEnv* node, Local<Value> value)
     } else if (value->IsMap()) { // Map
         PyErr_SetString(PyExc_TypeError, "NodeJS: Cannot convert JS Map – please convert to plain object with Object.fromEntries(map) or Array.from(map) before passing to Python");
         return NULL;
+    } else if (value->IsSymbol()) { // Symbol
+        Local<v8::Symbol> symbol = value.As<v8::Symbol>();
+        Global<v8::Symbol>* global_symbol = new Global<v8::Symbol>();
+        global_symbol->Reset(node->isolate, symbol);
+        Local<Value> description = symbol->Description(node->isolate);
+        v8::String::Utf8Value utf8(node->isolate, description);
+        char* name = strdup(*utf8);
+
+        JSSymbolData* data = new JSSymbolData();
+        data->node = node;
+        data->symbol = global_symbol;
+        data->name = name;
+        PyObject* capsule = PyCapsule_New(data, name, NULL);
+        return (PyObject*)JSSymbol_New(capsule);
     } else { // Any Object
         Local<Object> obj = value.As<Object>();
         Local<Array> keys = obj->GetOwnPropertyNames(context).ToLocalChecked();
