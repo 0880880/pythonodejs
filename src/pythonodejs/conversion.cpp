@@ -334,6 +334,16 @@ PyObject* JSToPy(NodeEnv* node, Local<Value> value)
         Local<StringObject> obj = value.As<StringObject>();
         v8::String::Utf8Value utf8(node->isolate, obj->ValueOf());
         return PyUnicode_FromString(*utf8);
+    } else if (value->IsArrayBufferView()) {
+        Local<v8::ArrayBufferView> view = value.As<v8::ArrayBufferView>();
+        size_t len = view->ByteLength();
+        size_t offset = view->ByteOffset();
+
+        Local<v8::ArrayBuffer> buffer = view->Buffer();
+        std::shared_ptr<v8::BackingStore> store = buffer->GetBackingStore();
+        char* data = static_cast<char*>(store->Data());
+
+        return PyBytes_FromStringAndSize(data + offset, len);
     } else if (value->IsNativeError()) {
         Local<Object> err = value.As<Object>();
         Local<String> msg_key = v8::String::NewFromUtf8(node->isolate, "message").ToLocalChecked();
