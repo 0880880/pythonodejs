@@ -51,7 +51,17 @@ elif system == "Darwin":
         library_dirs = [libnode_path]
 
 elif system == "Windows":
-    extra_compile_args = ["/std:c++20", "/Zc:__cplusplus", "/EHsc", "/MD"]
+    extra_compile_args = [
+        "/std:c++20",
+        "/Zc:__cplusplus",
+        "/EHsc",
+        "/MD",
+        "/DNOMINMAX",
+        "/wd4251",
+        "/wd4275",
+        "/wd4267",
+        "/wd4003",
+    ]
     libraries = ["libnode"]
     if libnode_path:
         library_dirs = [libnode_path]
