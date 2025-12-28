@@ -20,10 +20,18 @@ typedef struct {
     PyObject* py_func;
 } PyFunctionData;
 
+typedef struct {
+    NodeEnv* node;
+    PyObject* future;
+    PyObject* loop;
+} PyAwaitableData;
+
 // Function declarations
-static PyObject* js_func_handler(PyObject* self, PyObject* args);
+PyObject* js_func_handler(PyObject* self, PyObject* args);
 void py_func_handler(const v8::FunctionCallbackInfo<v8::Value>& args);
-static PyObject* js_promise_handler(PyObject* self, PyObject* future);
-static void cleanup_py_promise(PyObject* capsule);
+PyObject* js_promise_handler(PyObject* self, PyObject* future);
+void py_awaitable_handler(const v8::FunctionCallbackInfo<v8::Value>& args);
+void cleanup_py_promise(PyObject* capsule);
+void cleanup_py_awaitable(const v8::WeakCallbackInfo<PyAwaitableData>& info);
 void cleanup_py_function(const v8::WeakCallbackInfo<PyFunctionData>& info);
-static void cleanup_js_func(PyObject* capsule);
+void cleanup_js_func(PyObject* capsule);

@@ -2,13 +2,14 @@
 #include "common.h"
 #include "handlers.h"
 #include "node_env.h"
+#include "pyerrors.h"
 #include "symbol.h"
 #include "utils.h"
+#include "v8-promise.h"
 #include <Python.h>
 #include <cmath>
 #include <ctime>
 #include <datetime.h>
-#include <map>
 #include <vector>
 
 using std::string;
@@ -184,7 +185,7 @@ MaybeLocal<Value> PyToJS(NodeEnv* node, PyObject* value)
         Local<Promise::Resolver> resolver = maybe_resolver.ToLocalChecked();
         Local<Promise> promise = resolver->GetPromise();
         v8::Local<v8::Function> catch_handler = v8::Function::New(context, [](const v8::FunctionCallbackInfo<v8::Value>& args) {}, v8::Local<v8::Value>()).ToLocalChecked();
-        promise->Catch(context, catch_handler);
+        (void)promise->Catch(context, catch_handler);
         JSPromiseData* data = (JSPromiseData*)PyMem_Malloc(sizeof(JSPromiseData));
         if (!data) {
             Py_DECREF(asyncio);
@@ -414,6 +415,41 @@ PyObject* JSToPy(NodeEnv* node, Local<Value> value)
             return NULL;
         }
         return compiled;
+    } else if (value->IsPromise()) {
+        Local<v8::Promise> promise = value.As<v8::Promise>();
+        PyObject* loop = NULL;
+        PyObject* future = NULL;
+
+        PyObject* asyncio_mod = PyImport_ImportModule("asyncio");
+        if (!asyncio_mod)
+            return NULL;
+
+        loop = PyObject_CallMethod(asyncio_mod, "get_running_loop", NULL);
+        Py_DECREF(asyncio_mod);
+
+        if (!loop) {
+            return NULL; // Not inside async code
+        }
+
+        future = PyObject_CallMethod(loop, "create_future", NULL);
+        if (!future) {
+            Py_DECREF(loop);
+            return NULL;
+        }
+
+        PyAwaitableData* data = new PyAwaitableData { .node = node, .future = future, .loop = loop };
+
+        // We must keep 'future' and 'loop' alive.
+        Py_INCREF(future);
+        Py_INCREF(loop);
+
+        Local<External> ext = External::New(node->isolate, data);
+        v8::Persistent<v8::External> persistent(node->isolate, ext);
+        persistent.SetWeak(data, cleanup_py_awaitable, v8::WeakCallbackType::kParameter);
+        Local<FunctionTemplate> tpl = FunctionTemplate::New(node->isolate, py_awaitable_handler, ext);
+
+        (void)promise->Then(node->isolate->GetCurrentContext(), tpl->GetFunction(node->isolate->GetCurrentContext()).ToLocalChecked());
+
     } else {
         Local<Object> obj = value.As<Object>();
         Local<Array> keys = obj->GetOwnPropertyNames(context).ToLocalChecked();
@@ -431,4 +467,6 @@ PyObject* JSToPy(NodeEnv* node, Local<Value> value)
         visited->Delete(context, obj).ToChecked();
         return dict;
     }
+    PyErr_SetString(PyExc_RuntimeError, "Unable to convert Javascript type to Python type");
+    return NULL;
 }

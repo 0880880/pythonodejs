@@ -1,14 +1,13 @@
 #include "handlers.h"
 #include "common.h"
 #include "conversion.h"
-#include "symbol.h"
 #include <Python.h>
 #include <vector>
 
 using namespace std;
 
 // Handlers
-static PyObject* js_promise_handler(PyObject* self, PyObject* future)
+PyObject* js_promise_handler(PyObject* self, PyObject* future)
 {
     JSPromiseData* data = (JSPromiseData*)PyCapsule_GetPointer(self, "promise_data");
     if (!data)
@@ -94,7 +93,7 @@ static PyObject* js_promise_handler(PyObject* self, PyObject* future)
     Py_RETURN_NONE;
 }
 
-static PyObject* js_func_handler(PyObject* self, PyObject* args)
+PyObject* js_func_handler(PyObject* self, PyObject* args)
 {
     JSFunctionData* data = (JSFunctionData*)PyCapsule_GetPointer(self, "func_data");
     if (!data)
@@ -203,7 +202,53 @@ void py_func_handler(const v8::FunctionCallbackInfo<v8::Value>& args)
     PyGILState_Release(gstate);
 }
 
-static void cleanup_py_promise(PyObject* capsule)
+void py_awaitable_handler(const v8::FunctionCallbackInfo<v8::Value>& args)
+{
+    Isolate* isolate = args.GetIsolate();
+
+    v8::Local<v8::External> data = v8::Local<v8::External>::Cast(args.Data());
+    PyAwaitableData* awaitable_data = (PyAwaitableData*)data->Value();
+
+    Local<Value> result = args[0];
+
+    PyObject* converted = JSToPy(awaitable_data->node, result);
+
+    PyGILState_STATE gstate = PyGILState_Ensure();
+
+    PyObject* future = awaitable_data->future;
+    PyObject* loop = awaitable_data->loop;
+    PyObject* set_result_func = NULL;
+    PyObject* call_ret = NULL;
+
+    set_result_func = PyObject_GetAttrString(future, "set_result");
+    if (!set_result_func) {
+        goto error;
+    }
+
+    call_ret = PyObject_CallMethod(loop, "call_soon_threadsafe", "OO", set_result_func, converted);
+
+    if (!call_ret) {
+        PyErr_Print(); // FIXME
+    }
+
+    Py_XDECREF(call_ret);
+    Py_XDECREF(set_result_func);
+
+    Py_DECREF(future);
+    Py_DECREF(loop);
+
+    PyGILState_Release(gstate);
+    return;
+
+error:
+    Py_XDECREF(set_result_func);
+    Py_DECREF(future);
+    Py_DECREF(loop);
+    PyErr_Clear();
+    PyGILState_Release(gstate);
+}
+
+void cleanup_py_promise(PyObject* capsule)
 {
     JSPromiseData* data = (JSPromiseData*)PyCapsule_GetPointer(capsule, "promise_data");
     if (data) {
@@ -222,7 +267,12 @@ void cleanup_py_function(const v8::WeakCallbackInfo<PyFunctionData>& info)
     delete info.GetParameter();
 }
 
-static void cleanup_js_func(PyObject* capsule)
+void cleanup_py_awaitable(const v8::WeakCallbackInfo<PyAwaitableData>& info)
+{
+    delete info.GetParameter();
+}
+
+void cleanup_js_func(PyObject* capsule)
 {
     JSFunctionData* data = (JSFunctionData*)PyCapsule_GetPointer(capsule, "func_data");
     if (data) {
