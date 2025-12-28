@@ -1,9 +1,12 @@
 #include "conversion.h"
+#include "abstract.h"
 #include "bytesobject.h"
 #include "common.h"
 #include "handlers.h"
 #include "node_env.h"
+#include "object.h"
 #include "pyerrors.h"
+#include "setobject.h"
 #include "symbol.h"
 #include "utils.h"
 #include "v8-promise.h"
@@ -418,8 +421,27 @@ PyObject* JSToPy(NodeEnv* node, Local<Value> value)
         visited->Delete(context, set).ToChecked();
         return py_set;
     } else if (value->IsMap()) {
-        PyErr_SetString(PyExc_TypeError, "NodeJS: Cannot convert JS Map – please convert to plain object with Object.fromEntries(map) or Array.from(map) before passing to Python");
-        return NULL;
+        Local<v8::Map> js_map = value.As<v8::Map>();
+        Local<Array> as_array = js_map->AsArray(); // [key, val, ...]
+        PyObject* py_dict = PyDict_New();
+
+        visited->Set(context, js_map, External::New(node->isolate, py_dict)).ToLocalChecked();
+
+        for (uint32_t i = 0; i < as_array->Length(); i += 2) {
+            Local<Value> k = as_array->Get(context, i).ToLocalChecked();
+            Local<Value> v = as_array->Get(context, i + 1).ToLocalChecked();
+
+            PyObject* py_key = JSToPy(node, k);
+            PyObject* py_val = JSToPy(node, v);
+
+            if (py_key && py_val) {
+                PyDict_SetItem(py_dict, py_key, py_val);
+            }
+            Py_XDECREF(py_key);
+            Py_XDECREF(py_val);
+        }
+        visited->Delete(context, js_map).ToChecked();
+        return py_dict;
     } else if (value->IsSymbol()) {
         Local<Symbol> symbol = value.As<Symbol>();
         Global<Symbol>* global_symbol = new Global<Symbol>();
@@ -488,7 +510,6 @@ PyObject* JSToPy(NodeEnv* node, Local<Value> value)
         Local<FunctionTemplate> tpl = FunctionTemplate::New(node->isolate, py_awaitable_handler, ext);
 
         (void)promise->Then(node->isolate->GetCurrentContext(), tpl->GetFunction(node->isolate->GetCurrentContext()).ToLocalChecked());
-
     } else {
         Local<Object> obj = value.As<Object>();
         Local<Array> keys = obj->GetOwnPropertyNames(context).ToLocalChecked();
