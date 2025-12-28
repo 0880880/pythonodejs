@@ -167,6 +167,21 @@ MaybeLocal<Value> PyToJS(NodeEnv* node, PyObject* value)
             arr->Set(context, i, PyToJS(node, PyTuple_GetItem(value, i)).ToLocalChecked()).Check();
         }
         return arr;
+    } else if (PySet_Check(value)) {
+        Local<v8::Set> js_set = v8::Set::New(node->isolate);
+        PyObject* iterator = PyObject_GetIter(value);
+        PyObject* item;
+
+        if (iterator == NULL)
+            return Null(node->isolate);
+
+        while ((item = PyIter_Next(iterator))) {
+            Local<Value> js_val = PyToJS(node, item).ToLocalChecked();
+            js_set->Add(context, js_val).ToLocalChecked();
+            Py_DECREF(item);
+        }
+        Py_DECREF(iterator);
+        return js_set;
     } else if (PyMapping_Check(value)) {
         Py_ssize_t len = PyMapping_Length(value);
         if (len < 0) {
