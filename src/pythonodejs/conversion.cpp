@@ -382,14 +382,8 @@ PyObject* JSToPy(NodeEnv* node, Local<Value> value)
         PyObject* func_obj = PyCFunction_NewEx(def, capsule, NULL);
         visited->Set(context, js_func, External::New(node->isolate, func_obj)).ToLocalChecked();
         return func_obj;
-    } else if (value->IsArray() || value->IsSet()) {
-        Local<Array> arr;
-        if (value->IsSet()) {
-            Local<Set> set = value.As<Set>();
-            arr = set->AsArray();
-        } else {
-            arr = value.As<Array>();
-        }
+    } else if (value->IsArray()) {
+        Local<Array> arr = value.As<Array>();
         PyObject* list = PyList_New(arr->Length());
         visited->Set(context, arr, External::New(node->isolate, list)).ToLocalChecked();
         for (uint32_t i = 0; i < arr->Length(); i++) {
@@ -400,6 +394,19 @@ PyObject* JSToPy(NodeEnv* node, Local<Value> value)
         }
         visited->Delete(context, arr).ToChecked();
         return list;
+    } else if (value->IsSet()) {
+        Local<Set> set = value.As<Set>();
+        PyObject* py_set = PySet_New(NULL);
+        Local<Array> arr = set->AsArray();
+        visited->Set(context, set, External::New(node->isolate, py_set)).ToLocalChecked();
+        for (uint32_t i = 0; i < arr->Length(); i++) {
+            Local<Value> item = arr->Get(context, i).ToLocalChecked();
+            if (!visited->Has(context, item).ToChecked()) {
+                PySet_Add(py_set, JSToPy(node, item));
+            }
+        }
+        visited->Delete(context, set).ToChecked();
+        return py_set;
     } else if (value->IsMap()) {
         PyErr_SetString(PyExc_TypeError, "NodeJS: Cannot convert JS Map – please convert to plain object with Object.fromEntries(map) or Array.from(map) before passing to Python");
         return NULL;
