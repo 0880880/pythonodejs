@@ -1,4 +1,5 @@
 #include "conversion.h"
+#include "bytesobject.h"
 #include "common.h"
 #include "handlers.h"
 #include "node_env.h"
@@ -6,6 +7,7 @@
 #include "symbol.h"
 #include "utils.h"
 #include "v8-promise.h"
+#include "v8-typed-array.h"
 #include <Python.h>
 #include <cmath>
 #include <ctime>
@@ -143,6 +145,14 @@ MaybeLocal<Value> PyToJS(NodeEnv* node, PyObject* value)
         time_t unix_time = mktime(&t);
         double unix_ms = static_cast<double>(unix_time) * 1000;
         return v8::Date::New(context, unix_ms);
+    } else if (PyBytes_Check(value)) {
+        char* buf = PyBytes_AsString(value);
+        Py_ssize_t len = PyBytes_Size(value);
+
+        Local<v8::ArrayBuffer> ab = v8::ArrayBuffer::New(node->isolate, len);
+        memcpy(ab->GetBackingStore()->Data(), buf, len);
+
+        return v8::Uint8Array::New(ab, 0, len);
     } else if (PyList_Check(value)) {
         int len = PyList_Size(value);
         Local<Array> arr = Array::New(node->isolate, len);
