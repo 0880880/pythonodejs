@@ -13,11 +13,11 @@
 #include <env-inl.h>
 #include <map>
 #include <memory>
-#include <node/node.h>
-#include <node/uv.h>
-#include <node/v8-platform.h>
-#include <node/v8.h>
+#include <node.h>
 #include <node_internals.h>
+#include <uv.h>
+#include <v8-platform.h>
+#include <v8.h>
 
 // Platform specific
 #ifdef _WIN32
