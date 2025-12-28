@@ -334,9 +334,6 @@ PyObject* JSToPy(NodeEnv* node, Local<Value> value)
         Local<StringObject> obj = value.As<StringObject>();
         v8::String::Utf8Value utf8(node->isolate, obj->ValueOf());
         return PyUnicode_FromString(*utf8);
-    } else if (value->IsPromise()) {
-        PyErr_SetString(PyExc_NotImplementedError, "JS to Py promise is not implemented");
-        return NULL;
     } else if (value->IsNativeError()) {
         Local<Object> err = value.As<Object>();
         Local<String> msg_key = v8::String::NewFromUtf8(node->isolate, "message").ToLocalChecked();
