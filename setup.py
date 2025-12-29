@@ -68,7 +68,14 @@ elif system == "Windows":
 
 pythonodejs_extension = Extension(
     "pythonodejs._pythonodejs",
-    sources=["src/pythonodejs/module.cpp"],
+    sources=[
+        "src/pythonodejs/module.cpp",
+        "src/pythonodejs/conversion.cpp",
+        "src/pythonodejs/node_env.cpp",
+        "src/pythonodejs/symbol.cpp",
+        "src/pythonodejs/utils.cpp",
+        "src/pythonodejs/handlers.cpp",
+    ],
     include_dirs=include_dirs,
     library_dirs=library_dirs,
     libraries=libraries,
