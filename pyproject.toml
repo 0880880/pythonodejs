@@ -8,8 +8,11 @@ dynamic = ["version"]
 description = "Python-NodeJS interop library"
 readme = "README.md"
 requires-python = ">=3.9"
-license = { text = "MIT" }
+license = "MIT"
 authors = [{ name = "0880" }]
+
+[tool.setuptools]
+license-files = ["LICENSE"]
 
 [tool.setuptools_scm]
 version_scheme = "guess-next-dev"
