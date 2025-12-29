@@ -72,7 +72,7 @@ jobs:
           LDFLAGS: -fuse-ld=mold
         run: |
           cd include/node
-          ./configure --shared --ninja
+          ./configure --ninja --shared --enable-lto --without-npm 
           make -j$(nproc)
       - name: Upload
         uses: actions/upload-artifact@v4
@@ -88,7 +88,6 @@ jobs:
         include:
           #- arch: x86_64
           #  os: macos-14-intel # Intel runner
-          #  configure_flags: --ninja --shared
           - arch: arm64
             os: macos-latest # Apple Silicon runner
             configure_flags: --ninja --shared
@@ -123,7 +122,7 @@ jobs:
           export CC="ccache clang"
           export CXX="ccache clang++"
           cd include/node
-          ./configure ${{ matrix.configure_flags }}
+          ./configure --ninja --shared --enable-lto --without-npm ${{ matrix.configure_flags }}
           make
       - name: Create archive
         run: |
