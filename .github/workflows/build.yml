@@ -172,7 +172,7 @@ jobs:
           cd include\node
           $wrapperDir = "$Env:RUNNER_TEMP\compiler-wrapper"
           $wrapper = Join-Path $wrapperDir "cl.exe"
-          .\vcbuild.bat x64 dll openssl-no-asm clang-cl
+          .\vcbuild.bat x64 dll openssl-no-asm clang-cl nonpm release
       - name: Create archive
         run: |
           cd include\node\out\Release
