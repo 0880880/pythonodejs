@@ -1,5 +1,5 @@
 import asyncio
-import _pythonodejs
+from . import _pythonodejs
 
 
 async def event_loop_driver(node_instance):
