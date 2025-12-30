@@ -82,15 +82,14 @@ static PyMethodDef JSSymbol_methods[] = {
 };
 
 PyTypeObject JSSymbolType = {
-    PyVarObject_HEAD_INIT(&PyType_Type, 0)
-        .tp_name
-    = "pythonodejs.JSSymbol",
+    .ob_base = { { { 1 }, (&PyType_Type) }, (0) },
+    .tp_name = "pythonodejs.JSSymbol",
     .tp_basicsize = sizeof(JSSymbol),
     .tp_itemsize = 0,
     .tp_dealloc = (destructor)JSSymbol_dealloc,
     .tp_repr = (reprfunc)JSSymbol_repr,
     .tp_hash = (hashfunc)JSSymbol_hash,
+    .tp_flags = Py_TPFLAGS_DEFAULT,
     .tp_richcompare = (richcmpfunc)JSSymbol_richcompare,
     .tp_methods = JSSymbol_methods,
-    .tp_flags = Py_TPFLAGS_DEFAULT,
 };
