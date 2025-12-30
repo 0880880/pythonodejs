@@ -63,9 +63,6 @@ int is_coroutine_like(PyObject* obj)
 MaybeLocal<Value> PyToJS(NodeEnv* node, PyObject* value)
 {
     Local<Context> context = node->setup->context();
-    const char* tname = Py_TYPE(value)->tp_name;
-
-    // PySys_WriteStdout("Type: %s\n", tname); // Comment out for production
 
     if (value == Py_None) {
         return Null(node->isolate);

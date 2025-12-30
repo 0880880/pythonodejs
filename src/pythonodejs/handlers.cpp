@@ -204,8 +204,6 @@ void py_func_handler(const v8::FunctionCallbackInfo<v8::Value>& args)
 
 void py_awaitable_handler(const v8::FunctionCallbackInfo<v8::Value>& args)
 {
-    Isolate* isolate = args.GetIsolate();
-
     v8::Local<v8::External> data = v8::Local<v8::External>::Cast(args.Data());
     PyAwaitableData* awaitable_data = (PyAwaitableData*)data->Value();
 
