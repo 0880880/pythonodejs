@@ -17,7 +17,7 @@ class NodeJS:
                 path = (p / "main.js").resolve()
             else:
                 path = p.resolve()
-        self._node = _NodeJS(path, thread_pool_size)
+        self._node = _NodeJS(str(path), thread_pool_size)
 
     def __repr__(self):
         return f"<NodeJS at {hex(id(self))}>"
