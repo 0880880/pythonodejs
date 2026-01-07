@@ -1,4 +1,4 @@
-from ._pythonodejs import NodeJS
+from ._pythonodejs import NodeJS as _NodeJS
 from typing import Optional
 from pathlib import Path
 import sys
@@ -17,10 +17,10 @@ class NodeJS:
                 path = (p / "main.js").resolve()
             else:
                 path = p.resolve()
-        self._node = NodeJS(path, thread_pool_size)
+        self._node = _NodeJS(path, thread_pool_size)
 
     def __repr__(self):
-        return self._node.__repr__()
+        return f"<NodeJS at {hex(id(self))}>"
 
     def eval_cjs(self, code: str) -> any:
         return self._node.eval_cjs(code)
