@@ -27,7 +27,7 @@ int NodeJS_init(NodeJSObject* self, PyObject* args, PyObject* kwds)
 
     static const char* kwlist[] = { "path", "thread_pool_size", nullptr };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|s|i", const_cast<char**>(kwlist), &path, &thread_pool_size))
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "s|i", const_cast<char**>(kwlist), &path, &thread_pool_size))
         return -1;
 
     if (!node_initialized) {
